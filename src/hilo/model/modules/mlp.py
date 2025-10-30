@@ -2,6 +2,7 @@ from torch import nn
 from torch.nn import Module
 from collections import OrderedDict
 
+
 class InstanceNormWrapper(nn.Module):
     def __init__(self, num_features):
         super(InstanceNormWrapper, self).__init__()
@@ -12,9 +13,10 @@ class InstanceNormWrapper(nn.Module):
 
         x_ = x.permute(1, 0)
         x_norm = self.inst_norm(x_)
-        
+
         return x_norm.permute(1, 0)
-    
+
+
 class MLP(Module):
     def __init__(self, cfg):
         """Accepts inputs of shape B x C"""

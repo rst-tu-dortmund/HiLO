@@ -14,12 +14,17 @@ class Normalization(Module):
             self.norm_idcs = None
 
         self.dim = cfg.get("dim", -1)
-        
-        self.track_running_stats = cfg.get("track_running_stats", "none") # "none", "center", "scale", "both"
+
+        self.track_running_stats = cfg.get(
+            "track_running_stats", "none"
+        )  # "none", "center", "scale", "both"
         self.momentum = cfg.get("momentum", 0.1)
         self.track_center = False
         self.track_scale = False
-        if self.track_running_stats.lower() is None or self.track_running_stats.lower() == "none":
+        if (
+            self.track_running_stats.lower() is None
+            or self.track_running_stats.lower() == "none"
+        ):
             self.track_running_stats = None
         elif self.track_running_stats.lower() == "center":
             self.track_center = True
@@ -29,8 +34,10 @@ class Normalization(Module):
             self.track_center = True
             self.track_scale = True
         else:
-            raise ValueError(f"Unknown track_running_stats option: {self.track_running_stats}")
-        
+            raise ValueError(
+                f"Unknown track_running_stats option: {self.track_running_stats}"
+            )
+
     def _adjust_shape(self, x):
         # adjust shape for broadcasting
         shape = [1] * x.dim()
@@ -47,7 +54,7 @@ class Normalization(Module):
         # calculate running stats along all other dims except self.dim
         dim = self.dim % x.dim()
         reduce_dims = tuple(d for d in range(x.dim()) if d != dim)
-        
+
         if self.track_center:
             batch_center = x.mean(dim=reduce_dims, keepdim=True).squeeze()
             self.center.mul_(1 - self.momentum).add_(batch_center * self.momentum)
@@ -57,7 +64,7 @@ class Normalization(Module):
             batch_scale = batch_var.sqrt().squeeze()
             self.scale.mul_(1 - self.momentum).add_(batch_scale * self.momentum)
             self.scale.clamp_(min=1e-6)
-    
+
     def forward(self, x):
         if self.norm_idcs is None:
             x_sel = x
@@ -66,7 +73,7 @@ class Normalization(Module):
 
         self.track_stats(x_sel)
         center, scale = self._adjust_shape(x_sel)
-        
+
         if self.norm_idcs is None:
             return (x_sel - center) / scale
 

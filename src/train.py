@@ -12,7 +12,6 @@ from hilo.training.routine import train_one_epoch
 from hilo.utils.training.setup import set_fixed_seed
 from hilo.utils.training.lr_schedulers import initialize_lr_scheduler
 from hilo.utils.training.saving import save_topk_checkpoints
-from hilo.evaluation.metrics.calculator import MetricCalculator
 from hilo.evaluation.routine import evaluate_model, should_evaluate
 from hilo.utils.logging.wandb import init_wandb
 
@@ -32,14 +31,20 @@ def train(cfg):
 
     model = build_model(cfg["model"])
     model.to(cfg["device"])
-    
+
     train_loader = build_dataloader(cfg["data"], split="train")
-    
+
     loss = build_loss(cfg["training"]["loss"])
     loss.to(cfg["device"])
 
-    optimizer = torch.optim.AdamW(model.get_parameter_groups(weight_decay=cfg["training"]["optimizer"].get("weight_decay", 0.01), bias_norm_decay=cfg["training"]["optimizer"].get("bias_norm_decay", True)), lr=cfg["training"].get("learning_rate", 1e-3))
-    
+    optimizer = torch.optim.AdamW(
+        model.get_parameter_groups(
+            weight_decay=cfg["training"]["optimizer"].get("weight_decay", 0.01),
+            bias_norm_decay=cfg["training"]["optimizer"].get("bias_norm_decay", True),
+        ),
+        lr=cfg["training"].get("learning_rate", 1e-3),
+    )
+
     lr_scheduler = initialize_lr_scheduler(
         cfg["training"]["scheduler"], optimizer, len(train_loader)
     )
@@ -61,9 +66,9 @@ def train(cfg):
             epoch,
             lr_scheduler=lr_scheduler,
             use_wandb=use_wandb,
-            visualize_cfg=cfg["training"].get("visualization", None)
+            visualize_cfg=cfg["training"].get("visualization", None),
         )
-        
+
         if should_evaluate(cfg["evaluation"], epoch, epochs):
             metrics = evaluate_model(
                 model,
@@ -71,7 +76,7 @@ def train(cfg):
                 epoch,
                 cfg["evaluation"]["metrics"],
                 use_wandb=use_wandb,
-                visualize_cfg=cfg["evaluation"].get("visualization", None)
+                visualize_cfg=cfg["evaluation"].get("visualization", None),
             )
             topk_checkpoints = save_topk_checkpoints(
                 cfg["logging"]["checkpoints"],

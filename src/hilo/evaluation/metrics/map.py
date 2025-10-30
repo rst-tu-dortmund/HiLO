@@ -31,11 +31,11 @@ class NuscMAP:
         self.config = cfg
         self.visualize = cfg.get("VISUALIZE", False)
         self.logger = logging.getLogger("NuscMAP")
-        
+
         if cfg.get("PRINT_CONFIG", False):
             self.logger.info("NuscMAP Metric Config:")
             self.logger.info(json.dumps(self.config, indent=4))
-                
+
         self.calculate_CLR_metrics = cfg.get("CALCULATE_CLR_METRICS", False)
 
         self.classes = classes
@@ -115,9 +115,9 @@ class NuscMAP:
                 "class_fp": 0,
                 "class_fps": np.zeros(0),
                 "class_confidences": np.zeros(0),
-                "class_num_gt": (
-                    np.concatenate(data["gt_classes"], axis=0) == cls_id
-                ).sum().item(),
+                "class_num_gt": (np.concatenate(data["gt_classes"], axis=0) == cls_id)
+                .sum()
+                .item(),
             }
             for cls_id in range(num_classes)
         }
@@ -241,11 +241,11 @@ class NuscMAP:
                 sum_tp,
                 sum_fp,
                 sum_fn,
-            ) = self._accumulate(
-                class_Ng, class_det_confidences, class_tps, class_fps
-            )
+            ) = self._accumulate(class_Ng, class_det_confidences, class_tps, class_fps)
 
-            res[class_id]["class_ap"] = class_ap.item() if isinstance(class_ap, np.generic) else class_ap
+            res[class_id]["class_ap"] = (
+                class_ap.item() if isinstance(class_ap, np.generic) else class_ap
+            )
             res[class_id]["class_precision"] = class_precision_interp
             res[class_id]["class_recall"] = class_recall_interp
             res[class_id]["class_confidence"] = class_confidence_interp
@@ -321,7 +321,7 @@ class NuscMAP:
             )
             self.visualize = False
             return None
-        
+
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=rec, y=prec, mode="lines", name="Precision-Recall"))
         fig.update_layout(
@@ -400,11 +400,21 @@ class NuscMAP:
             "AP": {
                 threshold: {
                     self.classes[cls_id] if self.classes is not None else cls_id: {
-                        "AP": comb_res[threshold][cls_id]["class_ap"].item() if isinstance(comb_res[threshold][cls_id]["class_ap"], np.generic) else comb_res[threshold][cls_id]["class_ap"],
-                        "pr_curve": self._prec_re_to_plotly(
-                            comb_res[threshold][cls_id]["class_precision"],
-                            comb_res[threshold][cls_id]["class_recall"],
-                        ) if self.visualize else None,
+                        "AP": (
+                            comb_res[threshold][cls_id]["class_ap"].item()
+                            if isinstance(
+                                comb_res[threshold][cls_id]["class_ap"], np.generic
+                            )
+                            else comb_res[threshold][cls_id]["class_ap"]
+                        ),
+                        "pr_curve": (
+                            self._prec_re_to_plotly(
+                                comb_res[threshold][cls_id]["class_precision"],
+                                comb_res[threshold][cls_id]["class_recall"],
+                            )
+                            if self.visualize
+                            else None
+                        ),
                     }
                     for cls_id in class_ids
                     if cls_id in self._used_class_ids
@@ -444,7 +454,7 @@ class NuscMAP:
                 ]
             ).item(),
         }
-        
+
         if self.calculate_CLR_metrics:
             ret_res.update(self.CLR_metrics(comb_res))
 
@@ -455,10 +465,8 @@ class NuscMAP:
 
     def CLR_metrics(self, all_res):
         """Calculates class-averaged and detection-averaged metrics."""
-        raise NotImplementedError(
-            "CLR metrics not yet implemented for this metric."
-        )
-    
+        raise NotImplementedError("CLR metrics not yet implemented for this metric.")
+
     def combine_classes_class_averaged(self, all_res, ignore_empty_classes=False):
         """Combines metrics across all classes by averaging over the class values.
         If 'ignore_empty_classes' is True, then it only sums over classes with at least one gt or predicted detection.

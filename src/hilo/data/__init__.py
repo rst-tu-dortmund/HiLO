@@ -11,7 +11,7 @@ all_datasets = {
 def build_dataloader(cfg, split="train"):
     dataset_class = all_datasets[cfg["name"]]
     dataset = dataset_class(cfg, split=split)
-    
+
     logger = logging.getLogger(__name__)
     logger.info(f"Built dataset {str(dataset)}")
 
@@ -22,4 +22,4 @@ def build_dataloader(cfg, split="train"):
         num_workers=cfg.get("num_workers", 0),
         collate_fn=dataset.collate_fn,
         drop_last=cfg.get("drop_last", False),
-        )
+    )

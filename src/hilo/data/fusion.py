@@ -232,7 +232,7 @@ class FusionFilteredDataset(Dataset):
 
         self.rel_data_paths = rel_data_paths
         self.logger = logging.getLogger(__name__)
-        
+
     def __str__(self):
         return super().__str__() + f"(split={self.split}, num_samples={len(self)})"
 

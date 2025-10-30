@@ -1,5 +1,6 @@
 import torch
 
+
 def move_data_to_device(batch, device):
     if isinstance(batch, dict):
         for k, v in batch.items():
