@@ -1,0 +1,9 @@
+enabled: True
+project: ${environment.wandb.project}
+entity: ${environment.wandb.entity}
+mode: online  # online, offline, disabled
+name: ${name}
+dir: . #  Hydra changes workdir to outputs directory and wandb creates subfolder "wandb" by default 
+watch:
+  enabled: False
+  frequency: 1000

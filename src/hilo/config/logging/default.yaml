@@ -1,0 +1,8 @@
+defaults:
+  - wandb: default
+  - checkpoints: best
+
+dir: ${environment.output_dir}/logs/${name}/${now:%Y-%m-%d_%H-%M-%S-%f}
+level: DEBUG
+format: "[%(asctime)s] [%(levelname)s] %(message)s"
+datefmt: "%Y-%m-%d %H:%M:%S"

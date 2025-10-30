@@ -1,0 +1,27 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "train HiLO",
+            "justMyCode": false,
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/train.py",
+            "console": "integratedTerminal",
+            "args": [
+                "environment=kissaf1",
+                "logging.level=DEBUG",
+                "logging.wandb.enabled=False",
+                "+model.detection_normalization.track_running_stats=scale",
+                // "training.visualization.interval=1",
+                // "logging.checkpoints.enabled=True",
+                // "logging.checkpoints.topk=3",
+                "training.scheduler=null"
+            ]
+        }
+    ]
+}

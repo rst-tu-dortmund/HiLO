@@ -1,0 +1,3 @@
+interval: 100
+max_visualizations: 5 # per epoch
+class_names: ${data.classes}

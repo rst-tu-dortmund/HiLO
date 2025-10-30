@@ -1,0 +1,188 @@
+name: HiLO
+
+input_dim: ${data.dim}
+number_of_classes: ${data.number_of_classes}
+
+dropout: 0.3
+
+max_range: 50.0  # in meters
+
+detection_normalization:
+  track_scale: False
+  track_center: False
+  norm_indices: # TODO: confirm these indices
+    - 0 # x
+    - 1 # y
+    - 2 # length
+    - 3 # width
+    - 4 # v_x
+    - 5 # v_y
+    # - 6 # yaw
+    - 7 # class id
+    # - 8 # score
+    - 9 # x_std_dev
+    - 10 # y_std_dev
+    - 11 # length_std_dev
+    - 12 # width_std_dev
+    - 13 # v_x_std_dev
+    - 14 # v_y_std_dev
+    - 15 # yaw_std_dev
+    - 16 # sensor id
+    - 17 # time to gt [ms]
+  center:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    # - 0.0
+    - 0.0
+    # - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+  scale:
+    - ${model.max_range}
+    - ${model.max_range}
+    - 6.0
+    - 3.0
+    - 10.0
+    - 10.0
+    # - 3.1415926
+    - 5.0
+    # - 1.0
+    - 10.0
+    - 10.0
+    - 5.0
+    - 3.0
+    - 10.0
+    - 10.0
+    - 3.1415926
+    - ${data.number_of_sensors}
+    - 40.0
+
+
+detection_embedding:
+  - type: positional_embedding
+    kwargs:
+      enabled: True
+      input_channels: ${model.input_dim}
+      pos_channels:
+        - 0 # x
+        - 1 # y
+        - 2 # length
+        - 3 # width
+        - 4 # v_x
+        - 5 # v_y
+      N_freq: 10
+      logscale: true
+      dim: -1
+  
+  - type: direction_vector_heading_encoding
+    kwargs:
+      enabled: True
+      heading_index: 6 # yaw
+      replace_heading: True
+      dim: -1
+
+  - type: one_hot_class_encoding
+    kwargs:
+      enabled: True
+      input_channels: ${model.input_dim}
+      class_index: 7 # class index
+      num_classes: ${model.number_of_classes}
+      dim: -1
+
+detection_input_mlp:
+  is_intermediate: True
+  dropout: ${model.dropout}
+  hidden_channels:
+    - 32
+    - 64
+  norm: 
+    name: batchnorm
+  in_channels: ${model.input_dim}
+  out_channels: ${model.multi_modal_attention.d_model}
+  activation: 
+    name: relu
+  bias: True
+
+multi_modal_attention:
+  learned_inv_temperature: True
+  use_positional_encoding: True
+  positional_encoding_per_head: False
+  positional_encoding_scale_factor: 0.1
+  only_attend_to_others: True
+  d_model: 64
+  nhead: 4
+  num_layers: 6
+  dim_feedforward: ${mult:${.d_model},2}
+  norm_first: False
+  dropout: ${model.dropout}
+  activation: relu
+
+fusion_decoder:
+  use_positional_encoding: False
+  positional_encoding_per_head: False
+  positional_encoding_scale_factor: 0.1
+  d_model: 64
+  nhead: 4
+  num_layers: 6
+  dim_feedforward: ${mult:${.d_model},2}
+  norm_first: False
+  dropout: ${model.dropout}
+  activation: relu
+  num_queries: 20
+
+box_regression_head:
+  is_intermediate: False
+  dropout: ${model.dropout}
+  hidden_channels:
+    - 64
+    - 32
+  norm: 
+    name: batchnorm
+  in_channels: ${model.fusion_decoder.d_model}
+  out_channels: 8  # 2D bev box parameters: x, y, length, width, v_x, v_y, s_yaw, c_yaw
+  denormalization:
+    output_indices: # indices of output which to denormalize with detection normalization
+      - 0  # x
+      - 1  # y
+      - 2  # length
+      - 3  # width
+      - 4  # v_x
+      - 5  # v_y
+      # - 6  # s_yaw
+      # - 7  # c_yaw
+    norm_indices: # indices of denormalizing output features in input normalization (center and scale)
+      - 0  # x
+      - 1  # y
+      - 2  # length
+      - 3  # width
+      - 4  # v_x
+      - 5  # v_y
+
+  activation: 
+    name: relu
+  bias: True
+
+classification_head:
+  is_intermediate: False
+  dropout: ${model.dropout}
+  hidden_channels:
+    - 64
+    - 32
+  norm: 
+    name: instancenorm
+  in_channels: ${model.fusion_decoder.d_model}
+  out_channels: ${add:${model.number_of_classes},1}  # number of classes + 1 for no-object class (DETR style)
+  activation:
+    name: relu
+  bias: True

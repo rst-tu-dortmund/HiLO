@@ -1,0 +1,5 @@
+classes: ${data.classes}
+used_classes: ${data.classes}
+
+mAP:
+  PRINT_CONFIG: True

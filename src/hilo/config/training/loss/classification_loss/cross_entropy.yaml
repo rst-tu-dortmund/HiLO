@@ -1,0 +1,6 @@
+defaults:
+ - base_cls_loss
+
+type: cross_entropy
+kwargs:
+  reduction: mean

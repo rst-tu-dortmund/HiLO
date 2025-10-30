@@ -1,0 +1,4 @@
+run:
+  dir: ${logging.dir}
+job:
+  chdir: True

@@ -1,0 +1,7 @@
+defaults:
+  - base_reg_loss
+
+
+type: l2
+kwargs:
+  reduction: mean

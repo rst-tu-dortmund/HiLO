@@ -1,0 +1,11 @@
+defaults:
+  - model: hilo
+  - data: urban_fusion_filtered
+  - training: default
+  - evaluation: default
+  - logging: default
+  - hydra: default
+  - environment: base_environment
+
+name: HiLO
+device: cuda

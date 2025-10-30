@@ -1,0 +1,2 @@
+weight_decay: 0.01
+bias_norm_decay: true

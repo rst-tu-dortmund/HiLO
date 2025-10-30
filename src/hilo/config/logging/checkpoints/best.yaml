@@ -1,0 +1,6 @@
+dir: checkpoints
+enabled: False
+
+topk: 1
+metrics:
+  - mAP # has to match the key in the metrics calculator output

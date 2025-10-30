@@ -1,0 +1,25 @@
+name: fusion_filtered
+
+batch_size: ${environment.batch_size}
+
+preprocess: True
+
+number_of_sensors: 5
+
+classes:
+  - truck
+  - car
+  - motorcycle
+  - bicycle
+  - pedestrian
+
+number_of_classes: ${length:${.classes}} # TODO: update when known
+dim: 18 # x, y, length, width, v_x, v_y, yaw, class, score, x_std_dev, y_std_dev, length_std_dev, width_std_dev, v_x_std_dev, v_y_std_dev, yaw_std_dev, sensor_id, time_to_gt
+
+domain: ???
+
+shuffle: ${training.shuffle_data}
+number_of_workers: ${environment.num_workers}
+
+data_root: ${environment.dataset_root}
+data_path: ${path_join:${environment.dataset_root}, fusion_filtered_v5, ${data.domain}}

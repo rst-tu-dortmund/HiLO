@@ -1,0 +1,14 @@
+defaults:
+  - loss: optimal_match_loss
+  - optimizer: adamw
+  - scheduler: onecycle
+  - visualization: default
+
+
+seed: 133742
+deterministic: true
+
+learning_rate: 0.001
+batch_size: ${data.batch_size}
+epochs: 100
+shuffle_data: true
