@@ -1,4 +1,4 @@
 type: onecycle
-warmup_epochs: 10
+warmup_epochs: ${intdiv:${training.epochs},3}
 training_epochs: ${training.epochs}
 max_lr: ${training.learning_rate}

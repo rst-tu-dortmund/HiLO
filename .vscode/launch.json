@@ -16,11 +16,15 @@
                 "environment=kissaf1",
                 "logging.level=DEBUG",
                 "logging.wandb.enabled=False",
-                "+model.detection_normalization.track_running_stats=scale",
+                "environment.batch_size=8",
+                "environment.num_workers=0",
+                "model.multi_modal_attention.d_model=128",
                 // "training.visualization.interval=1",
                 // "logging.checkpoints.enabled=True",
                 // "logging.checkpoints.topk=3",
-                "training.scheduler=null"
+                "training.scheduler=null",
+                "+model.detection_normalization.track_running_stats=scale",
+                "model.fusion_decoder.use_positional_encoding=True"
             ]
         }
     ]

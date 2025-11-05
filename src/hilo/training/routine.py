@@ -4,7 +4,7 @@ import wandb
 import logging
 from hilo.utils.data.management import move_data_to_device
 from hilo.utils.visualization.controls import should_visualize
-from hilo.utils.visualization.bev import plot_sample
+from hilo.utils.visualization.bev import plot_association_results, plot_sample
 
 
 def train_one_epoch(
@@ -51,13 +51,18 @@ def train_one_epoch(
         if lr_scheduler is not None:
             lr_scheduler.step()
 
-        fig = None
+        sample_fig = None
+        association_fig = None
         if should_visualize(visualize_cfg, batch_idx):
-            fig = plot_sample(
+            sample_fig = plot_sample(
                 outputs,
                 batch,
                 class_names=visualize_cfg.get("class_names", None),
                 filter_background=visualize_cfg.get("filter_background", True),
+            )
+            association_fig = plot_association_results(
+                association_results,
+                class_names=visualize_cfg.get("class_names", None),
             )
 
         if use_wandb:
@@ -70,8 +75,11 @@ def train_one_epoch(
             log_dict["train/global_step"] = global_training_step
             log_dict["train/batch_idx"] = batch_idx
 
-            if fig is not None:
-                log_dict["train/visualization"] = fig
+            if sample_fig is not None:
+                log_dict["visualization/train/sample"] = sample_fig
+
+            if association_fig is not None:
+                log_dict["visualization/train/association"] = association_fig
 
             wandb.log(log_dict)
 

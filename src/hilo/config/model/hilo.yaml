@@ -126,6 +126,7 @@ multi_modal_attention:
   dim_feedforward: ${mult:${.d_model},2}
   norm_first: False
   dropout: ${model.dropout}
+  attn_dropout: 0.0
   activation: relu
 
 fusion_decoder:
@@ -138,6 +139,7 @@ fusion_decoder:
   dim_feedforward: ${mult:${.d_model},2}
   norm_first: False
   dropout: ${model.dropout}
+  attn_dropout: 0.0
   activation: relu
   num_queries: 20
 

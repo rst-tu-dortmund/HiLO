@@ -47,7 +47,7 @@ class Normalization(Module):
 
         return center, scale
 
-    def track_stats(self, x):
+    def track_stats(self, x, mask=None):
         if self.track_running_stats is None or not self.training:
             return
 
@@ -55,23 +55,29 @@ class Normalization(Module):
         dim = self.dim % x.dim()
         reduce_dims = tuple(d for d in range(x.dim()) if d != dim)
 
+        if mask is not None and mask.any():
+            x_valid = x[mask]
+            reduce_dims = 0
+        else:
+            x_valid = x
+
         if self.track_center:
-            batch_center = x.mean(dim=reduce_dims, keepdim=True).squeeze()
+            batch_center = x_valid.mean(dim=reduce_dims, keepdim=True).squeeze()
             self.center.mul_(1 - self.momentum).add_(batch_center * self.momentum)
 
         if self.track_scale:
-            batch_var = x.var(dim=reduce_dims, unbiased=False, keepdim=True)
+            batch_var = x_valid.var(dim=reduce_dims, unbiased=False, keepdim=True)
             batch_scale = batch_var.sqrt().squeeze()
             self.scale.mul_(1 - self.momentum).add_(batch_scale * self.momentum)
             self.scale.clamp_(min=1e-6)
 
-    def forward(self, x):
+    def forward(self, x, mask=None):
         if self.norm_idcs is None:
             x_sel = x
         else:
             x_sel = torch.index_select(x, self.dim, self.norm_idcs)
 
-        self.track_stats(x_sel)
+        self.track_stats(x_sel, mask)
         center, scale = self._adjust_shape(x_sel)
 
         if self.norm_idcs is None:

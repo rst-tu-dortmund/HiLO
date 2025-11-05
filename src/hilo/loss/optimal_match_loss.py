@@ -219,6 +219,24 @@ class OptimalMatchLoss(Module):
                     dim=-1,
                 ).mean()
             )
+            heading_norm_loss = (
+                (
+                    1
+                    - torch.cat(
+                        [
+                            asso_results[True]["prediction"]["heading_directions"],
+                            asso_results[False]["prediction"]["heading_directions"],
+                        ]
+                    )
+                    .pow(2)
+                    .sum(dim=-1)
+                )
+                .pow(2)
+                .mean()
+            )
+            heading_loss = (
+                heading_loss + heading_norm_loss * 0.1
+            )  # normalize heading vector
             losses["heading_loss"] = heading_loss
 
             losses["regression_loss"] = (

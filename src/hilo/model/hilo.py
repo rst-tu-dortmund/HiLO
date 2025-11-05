@@ -33,6 +33,13 @@ class HiLO(Module):
         fusion_queries = torch.randn(
             (cfg["fusion_decoder"]["num_queries"], 1, cfg["fusion_decoder"]["d_model"])
         )
+        
+        self.tf_encoder_decoder_interface = None
+        if cfg["multi_modal_attention"]["d_model"] != cfg["fusion_decoder"]["d_model"]:
+            self.tf_encoder_decoder_interface = torch.nn.Linear(
+                cfg["multi_modal_attention"]["d_model"],
+                cfg["fusion_decoder"]["d_model"],
+            )
 
         fusion_queries = fusion_queries / fusion_queries.abs().max()
         fusion_queries.requires_grad = True
@@ -54,13 +61,14 @@ class HiLO(Module):
 
         self.classification_head = MLP(cfg["classification_head"])
 
-    def shared_object_encoding(self, x):
+    def shared_object_encoding(self, x, mask):
         # Shared object encoding across sensors and detections
         b, s, n, c = x.shape  # batch, sensors, num_detections, channels
 
         x_ = einops.rearrange(x, "b s n c -> (b s n) c")
+        mask_ = einops.rearrange(mask, "b s n -> (b s n)")
 
-        x_ = self.detection_normalization(x_)
+        x_ = self.detection_normalization(x_, mask_)
         x_ = self.detection_embedding(x_)
         x_ = self.detection_input_mlp(x_)
 
@@ -122,13 +130,17 @@ class HiLO(Module):
         )
 
         x_ = einops.rearrange(x, "b s n c -> (s n) b c")
+        
+        if self.tf_encoder_decoder_interface is not None:
+            x_ = self.tf_encoder_decoder_interface(x_)
+        
         pe_feat_ = einops.rearrange(pe_feat, "b s n c -> b (s n) c")
         mask_ = einops.rearrange(mask, "b s n -> b (s n)")
 
         if self.cfg["fusion_decoder"].get("use_positional_encoding", False):
             pe = self._get_positional_embeddings(
                 x_,
-                pos_enc_feat=pe_feat,
+                pos_enc_feat=pe_feat_,
                 tf_dim_pattern="n b c",
                 num_heads=(
                     self.cfg["fusion_decoder"]["nhead"]
@@ -168,7 +180,7 @@ class HiLO(Module):
         ]  # assuming first two channels are positional features (x, y)
 
         # encode detections
-        x_enc = self.shared_object_encoding(x)
+        x_enc = self.shared_object_encoding(x, mask)
 
         # multi-modal attention
         x_mma = self.multi_modal_attention(x_enc, mask, pe_feat)
