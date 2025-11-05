@@ -34,7 +34,11 @@ def evaluate_model(
             batch_metrics = metric_calculator.batch(outputs, batch_device)
 
             if use_wandb:
-                log_dict = {f"eval/{k}": v for k, v in batch_metrics.items() if not "map_raw" in k}
+                log_dict = {
+                    f"eval/{k}": v
+                    for k, v in batch_metrics.items()
+                    if not "map_raw" in k
+                }
                 log_dict["eval/global_step"] = global_eval_step
                 log_dict["eval/batch_idx"] = batch_idx
 

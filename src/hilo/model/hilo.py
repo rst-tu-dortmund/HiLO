@@ -33,7 +33,7 @@ class HiLO(Module):
         fusion_queries = torch.randn(
             (cfg["fusion_decoder"]["num_queries"], 1, cfg["fusion_decoder"]["d_model"])
         )
-        
+
         self.tf_encoder_decoder_interface = None
         if cfg["multi_modal_attention"]["d_model"] != cfg["fusion_decoder"]["d_model"]:
             self.tf_encoder_decoder_interface = torch.nn.Linear(
@@ -130,10 +130,10 @@ class HiLO(Module):
         )
 
         x_ = einops.rearrange(x, "b s n c -> (s n) b c")
-        
+
         if self.tf_encoder_decoder_interface is not None:
             x_ = self.tf_encoder_decoder_interface(x_)
-        
+
         pe_feat_ = einops.rearrange(pe_feat, "b s n c -> b (s n) c")
         mask_ = einops.rearrange(mask, "b s n -> b (s n)")
 
