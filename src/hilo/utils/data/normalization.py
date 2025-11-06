@@ -5,6 +5,8 @@ from torch.nn import Module
 class Normalization(Module):
     def __init__(self, cfg):
         super(Normalization, self).__init__()
+        self.enabled = cfg.get("enabled", True)
+        
         self.register_buffer("center", torch.tensor(cfg["center"]))
         self.register_buffer("scale", torch.tensor(cfg["scale"]))
         norm_idcs = cfg.get("norm_indices", None)
@@ -20,7 +22,10 @@ class Normalization(Module):
         )  # "none", "center", "scale", "both"
         self.momentum = cfg.get("momentum", 0.1)
         self.track_center = False
+        self.center_track_mode = cfg.get("center_track_mode", "center")  # "mean", "center"
         self.track_scale = False
+        self.scale_track_mode = cfg.get("scale_track_mode", "range")  # "std", "range"
+        
         if (
             self.track_running_stats.lower() is None
             or self.track_running_stats.lower() == "none"
@@ -48,30 +53,54 @@ class Normalization(Module):
         return center, scale
 
     def track_stats(self, x, mask=None):
-        if self.track_running_stats is None or not self.training:
-            return
+        with torch.no_grad():
+            if self.track_running_stats is None or not self.training:
+                return
 
-        # calculate running stats along all other dims except self.dim
-        dim = self.dim % x.dim()
-        reduce_dims = tuple(d for d in range(x.dim()) if d != dim)
+            # calculate running stats along all other dims except self.dim
+            dim = self.dim % x.dim()
+            reduce_dims = tuple(d for d in range(x.dim()) if d != dim)
 
-        if mask is not None and mask.any():
-            x_valid = x[mask]
-            reduce_dims = 0
-        else:
-            x_valid = x
+            if mask is not None and mask.any():
+                x_valid = x[mask]
+                reduce_dims = 0
+            else:
+                x_valid = x
 
-        if self.track_center:
-            batch_center = x_valid.mean(dim=reduce_dims, keepdim=True).squeeze()
-            self.center.mul_(1 - self.momentum).add_(batch_center * self.momentum)
+            if self.track_center:
+                if self.center_track_mode == "mean":
+                    batch_center = x_valid.mean(dim=reduce_dims, keepdim=True).squeeze()
+                    self.center.mul_(1 - self.momentum).add_(batch_center * self.momentum)
+                elif self.center_track_mode == "center":
+                    batch_min = x_valid.amin(dim=reduce_dims, keepdim=True).squeeze()
+                    batch_max = x_valid.amax(dim=reduce_dims, keepdim=True).squeeze()
+                    batch_center = 0.5 * (batch_min + batch_max)
+                    self.center.mul_(1 - self.momentum).add_(batch_center * self.momentum)
+                else:
+                    raise ValueError(
+                        f"Unknown center tracking mode: {self.center_track_mode}"
+                    )
 
-        if self.track_scale:
-            batch_var = x_valid.var(dim=reduce_dims, unbiased=False, keepdim=True)
-            batch_scale = batch_var.sqrt().squeeze()
-            self.scale.mul_(1 - self.momentum).add_(batch_scale * self.momentum)
-            self.scale.clamp_(min=1e-6)
+            if self.track_scale:
+                if self.scale_track_mode == "std":
+                    batch_var = x_valid.var(dim=reduce_dims, unbiased=False, keepdim=True)
+                    batch_scale = batch_var.sqrt().squeeze()
+                    self.scale.mul_(1 - self.momentum).add_(batch_scale * self.momentum)
+                elif self.scale_track_mode == "range":
+                    batch_min = x_valid.amin(dim=reduce_dims, keepdim=True).squeeze()
+                    batch_max = x_valid.amax(dim=reduce_dims, keepdim=True).squeeze()
+                    batch_scale = 0.5 * (batch_max - batch_min)
+                    # self.scale = torch.amax(batch_scale, self.scale)
+                    self.scale.mul_(1 - self.momentum).add_(batch_scale * self.momentum)
+                else:
+                    raise ValueError(f"Unknown scale tracking mode: {self.scale_track_mode}")
+
+                self.scale.clamp_(min=1e-6)
 
     def forward(self, x, mask=None):
+        if not self.enabled:
+            return x.clone()
+        
         if self.norm_idcs is None:
             x_sel = x
         else:
@@ -90,6 +119,9 @@ class Normalization(Module):
         return x_norm
 
     def denormalize(self, x, feature_idcs=None, norm_idcs=None):
+        if not self.enabled:
+            return x.clone()
+
         if feature_idcs is not None:
             x_ = torch.index_select(x, self.dim, feature_idcs)
         else:

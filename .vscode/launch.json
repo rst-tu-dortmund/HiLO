@@ -22,9 +22,12 @@
                 // "training.visualization.interval=1",
                 // "logging.checkpoints.enabled=True",
                 // "logging.checkpoints.topk=3",
-                "training.scheduler=null",
+                // "training.scheduler=null",
                 "+model.detection_normalization.track_running_stats=scale",
-                "model.fusion_decoder.use_positional_encoding=True"
+                "model.fusion_decoder.use_positional_encoding=True",
+                "training/scheduler=linear_increase",
+                "+model.detection_normalization.enabled=False",
+                "model.detection_embedding.enabled=False",
             ]
         }
     ]

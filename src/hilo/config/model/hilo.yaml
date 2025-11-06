@@ -18,7 +18,7 @@ detection_normalization:
     - 4 # v_x
     - 5 # v_y
     # - 6 # yaw
-    - 7 # class id
+    # - 7 # class id
     # - 8 # score
     - 9 # x_std_dev
     - 10 # y_std_dev
@@ -37,7 +37,7 @@ detection_normalization:
     - 0.0
     - 0.0
     # - 0.0
-    - 0.0
+    # - 0.0
     # - 0.0
     - 0.0
     - 0.0
@@ -56,7 +56,7 @@ detection_normalization:
     - 10.0
     - 10.0
     # - 3.1415926
-    - 5.0
+    # - 5.0
     # - 1.0
     - 10.0
     - 10.0
@@ -70,35 +70,37 @@ detection_normalization:
 
 
 detection_embedding:
-  - type: positional_embedding
-    kwargs:
-      enabled: True
-      input_channels: ${model.input_dim}
-      pos_channels:
-        - 0 # x
-        - 1 # y
-        - 2 # length
-        - 3 # width
-        - 4 # v_x
-        - 5 # v_y
-      N_freq: 10
-      logscale: true
-      dim: -1
-  
-  - type: direction_vector_heading_encoding
-    kwargs:
-      enabled: True
-      heading_index: 6 # yaw
-      replace_heading: True
-      dim: -1
+  enabled: True
+  embeddings:
+    - type: positional_embedding
+      kwargs:
+        enabled: True
+        input_channels: ${model.input_dim}
+        pos_channels:
+          - 0 # x
+          - 1 # y
+          - 2 # length
+          - 3 # width
+          - 4 # v_x
+          - 5 # v_y
+        N_freq: 10
+        logscale: true
+        dim: -1
+    
+    - type: direction_vector_heading_encoding
+      kwargs:
+        enabled: True
+        heading_index: 6 # yaw
+        replace_heading: True
+        dim: -1
 
-  - type: one_hot_class_encoding
-    kwargs:
-      enabled: True
-      input_channels: ${model.input_dim}
-      class_index: 7 # class index
-      num_classes: ${model.number_of_classes}
-      dim: -1
+    - type: one_hot_class_encoding
+      kwargs:
+        enabled: True
+        input_channels: ${model.input_dim}
+        class_index: 8 # class index increased due to direction vector encoding
+        num_classes: ${model.number_of_classes}
+        dim: -1
 
 detection_input_mlp:
   is_intermediate: True

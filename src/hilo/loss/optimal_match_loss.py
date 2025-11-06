@@ -257,6 +257,11 @@ class OptimalMatchLoss(Module):
                 dim=0,
             )
 
+            if torch.any(asso_results[True]["target"][..., 7] < 0):
+                raise ValueError(
+                    "Found invalid class labels in assigned targets for classification loss."
+                )
+            
             tgt_cls = torch.cat(
                 [
                     asso_results[True]["target"][..., 7].long(),

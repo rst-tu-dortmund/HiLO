@@ -238,11 +238,18 @@ class Embedding(Module):
     def __init__(self, cfg):
         super(Embedding, self).__init__()
         self.cfg = cfg
+        self.enabled = cfg.get("enabled", True)
+        
+        if not self.enabled:
+            self.additional_channels = 0
+            return
+        
+        embeddings = cfg.get("embeddings", [])
 
         self.emb_steps = nn.ModuleList()
-        additional_channels = torch.zeros(len(cfg), dtype=torch.long)
+        additional_channels = torch.zeros(len(embeddings), dtype=torch.long)
 
-        for k, emb_step in enumerate(cfg):
+        for k, emb_step in enumerate(embeddings):
             emb_type, emb_kwargs = emb_step["type"].lower(), emb_step["kwargs"]
 
             if "positional_embedding" == emb_type:
@@ -271,6 +278,9 @@ class Embedding(Module):
         #         next_emb.index_shift(curr_emb.insert_index, curr_emb.additional_channels)
 
     def forward(self, x):
+        if not self.enabled:
+            return x
+        
         for emb_step in self.emb_steps:
             if emb_step.enabled:
                 x = emb_step(x)

@@ -1,8 +1,9 @@
 import torch
+from torch import nn
 from torch.nn import Module
 
 import math
-
+import logging
 import einops
 
 from hilo.model.modules.embedding import Embedding
@@ -18,6 +19,15 @@ class HiLO(Module):
         # Initialize model components based on model cfg
         # This is a placeholder implementation
         self.cfg = cfg
+        self.logger = logging.getLogger(__name__)
+        
+        self.no_mma_tf_masks = cfg.get("no_mma_tf_masks", False)
+        if self.no_mma_tf_masks:
+            self.logger.warning("No multi-modal attention transformer masks will be used.")
+            
+        self.no_fusion_tf_masks = cfg.get("no_fusion_tf_masks", False)
+        if self.no_fusion_tf_masks:
+            self.logger.warning("No fusion decoder transformer masks will be used.")
 
         self.detection_normalization = Normalization(cfg["detection_normalization"])
         self.detection_embedding = Embedding(cfg["detection_embedding"])
@@ -43,7 +53,7 @@ class HiLO(Module):
 
         fusion_queries = fusion_queries / fusion_queries.abs().max()
         fusion_queries.requires_grad = True
-        self.register_buffer("fusion_queries", fusion_queries)
+        self.register_parameter("fusion_queries", torch.nn.Parameter(fusion_queries, requires_grad=True))
 
         self.box_regression_head = MLP(cfg["box_regression_head"])
         denorm_reg_output_idcs = torch.tensor(
@@ -68,13 +78,13 @@ class HiLO(Module):
         x_ = einops.rearrange(x, "b s n c -> (b s n) c")
         mask_ = einops.rearrange(mask, "b s n -> (b s n)")
 
-        x_ = self.detection_normalization(x_, mask_)
-        x_ = self.detection_embedding(x_)
-        x_ = self.detection_input_mlp(x_)
+        x_norm = self.detection_normalization(x_, mask_)
+        x_emb = self.detection_embedding(x_norm)
+        x_enc = self.detection_input_mlp(x_emb)
 
-        x = einops.rearrange(x_, "(b s n) c -> b s n c", b=b, s=s, n=n)
+        x_out = einops.rearrange(x_enc, "(b s n) c -> b s n c", b=b, s=s, n=n)
 
-        return x
+        return x_out
 
     def multi_modal_attention(self, x, mask, pe_feat):
         # Multi-modal attention across sensors
@@ -110,9 +120,9 @@ class HiLO(Module):
 
         x_mma, attn_weights = self.multi_modal_attention_tf(
             x_,
-            src_key_padding_mask=~mask_,
+            src_key_padding_mask=~mask_ if not self.no_mma_tf_masks else None,
             is_causal=False,
-            mask=sequence_mask,
+            mask=sequence_mask if not self.no_mma_tf_masks else None,
         )
 
         x_mma = einops.rearrange(x_mma, "(s n) b c -> b s n c", b=b, s=s, n=n)
@@ -158,7 +168,7 @@ class HiLO(Module):
         x_dec = self.fusion_decoder_tf(
             tgt=fusion_queries,
             memory=x_,
-            memory_key_padding_mask=~mask_,
+            memory_key_padding_mask=~mask_ if not self.no_fusion_tf_masks else None,
         )
 
         x_dec = einops.rearrange(x_dec, "q b c -> b q c")
@@ -268,49 +278,50 @@ class HiLO(Module):
     def _get_positional_embeddings(
         self, x, pos_enc_feat, tf_dim_pattern, num_heads=None, scale_factor=1.0
     ):
-        tf_dims = einops.parse_shape(
-            x, tf_dim_pattern
-        )  # yields b n c (either b n c or n b c), c is always last!
-        c_head = tf_dims["c"] // num_heads if num_heads is not None else tf_dims["c"]
-        pos_enc_in = pos_enc_feat.detach()  # b n c
-        n_elem = pos_enc_in.shape[-1] * 2
-        n_freq = math.ceil(c_head / n_elem)
+        with torch.no_grad():
+            tf_dims = einops.parse_shape(
+                x, tf_dim_pattern
+            )  # yields b n c (either b n c or n b c), c is always last!
+            c_head = tf_dims["c"] // num_heads if num_heads is not None else tf_dims["c"]
+            pos_enc_in = pos_enc_feat.detach()  # b n c
+            n_elem = pos_enc_in.shape[-1] * 2
+            n_freq = math.ceil(c_head / n_elem)
 
-        i = torch.arange(n_freq, dtype=torch.float32, device=x.device)
-        denom = self.cfg["max_range"] ** (2 * i / c_head)
+            i = torch.arange(n_freq, dtype=torch.float32, device=x.device)
+            denom = self.cfg["max_range"] ** (2 * i / c_head)
 
-        pos_enc_in.unsqueeze_(-1)  # b n c 1
-        # x = pos_enc_in[..., 0, None]
-        # y = pos_enc_in[..., 1, None]
+            pos_enc_in.unsqueeze_(-1)  # b n c 1
+            # x = pos_enc_in[..., 0, None]
+            # y = pos_enc_in[..., 1, None]
 
-        # pe = torch.zeros(
-        #     (tf_dims["b"], tf_dims["n"], c_head),
-        #     device=x.device,
-        #     dtype=x.dtype,
-        # )
-        pe_s = torch.sin(pos_enc_in / denom)  # b n pe_feat n_freq
-        pe_c = torch.cos(pos_enc_in / denom)  # b n pe_feat n_freq
+            # pe = torch.zeros(
+            #     (tf_dims["b"], tf_dims["n"], c_head),
+            #     device=x.device,
+            #     dtype=x.dtype,
+            # )
+            pe_s = torch.sin(pos_enc_in / denom)  # b n pe_feat n_freq
+            pe_c = torch.cos(pos_enc_in / denom)  # b n pe_feat n_freq
 
-        pe = torch.cat([pe_s, pe_c], dim=-1)  # b n pe_feat 2*n_freq
-        pe = einops.rearrange(
-            pe,
-            "b n c f -> b n (c f)",
-        )  # b n (pe_feat*2*n_freq)
-
-        # pe[..., 0::4] = torch.sin(x / denom)
-        # pe[..., 1::4] = torch.cos(x / denom)
-        # pe[..., 2::4] = torch.sin(y / denom)
-        # pe[..., 3::4] = torch.cos(y / denom)
-
-        if num_heads is not None:
-            pe = einops.repeat(
+            pe = torch.cat([pe_s, pe_c], dim=-1)  # b n pe_feat 2*n_freq
+            pe = einops.rearrange(
                 pe,
-                "b n c -> b n (h c)",
-                h=num_heads,
-            )
+                "b n c f -> b n (c f)",
+            )  # b n (pe_feat*2*n_freq)
 
-        pe = pe[..., : tf_dims["c"]]
-        pos_enc = einops.rearrange(pe, "b n c -> " + tf_dim_pattern) * scale_factor
+            # pe[..., 0::4] = torch.sin(x / denom)
+            # pe[..., 1::4] = torch.cos(x / denom)
+            # pe[..., 2::4] = torch.sin(y / denom)
+            # pe[..., 3::4] = torch.cos(y / denom)
+
+            if num_heads is not None:
+                pe = einops.repeat(
+                    pe,
+                    "b n c -> b n (h c)",
+                    h=num_heads,
+                )
+
+            pe = pe[..., : tf_dims["c"]]
+            pos_enc = einops.rearrange(pe, "b n c -> " + tf_dim_pattern) * scale_factor
 
         return pos_enc
 

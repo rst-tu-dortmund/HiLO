@@ -24,7 +24,7 @@ def plot_sample(
         fig (go.Figure): A Plotly figure object containing the BEV visualization.
     """
     if class_names is not None:
-        class_names.append("no object")  # Add background class name
+        class_names_ = class_names + ["no object"]  # Add background class name
 
     fig = go.Figure()
 
@@ -82,7 +82,7 @@ def plot_sample(
 
     pred_label = "Predicted Box"
     render_boxes_with_scores(
-        score_threshold, class_names, fig, pred_objs, pred_label, "blue"
+        score_threshold, class_names_, fig, pred_objs, pred_label, "blue"
     )
 
     # Plot ground truth boxes
@@ -90,7 +90,7 @@ def plot_sample(
         data["gt_data"][batch_idx][data["gt_mask"][batch_idx]].detach().cpu().numpy()
     )
     gt_label = "Ground Truth Box"
-    render_boxes_with_scores(0.0, class_names, fig, gt_boxes, gt_label, "green")
+    render_boxes_with_scores(0.0, class_names_, fig, gt_boxes, gt_label, "green")
 
     # set scale ratio to be equal and set a reasonable figure size
     fig.update_layout(
