@@ -1,12 +1,15 @@
 import torch
 from torch.nn import Module
 
+import logging
+
 
 class Normalization(Module):
     def __init__(self, cfg):
         super(Normalization, self).__init__()
         self.enabled = cfg.get("enabled", True)
-        
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
         self.register_buffer("center", torch.tensor(cfg["center"]))
         self.register_buffer("scale", torch.tensor(cfg["scale"]))
         norm_idcs = cfg.get("norm_indices", None)
@@ -16,32 +19,12 @@ class Normalization(Module):
             self.norm_idcs = None
 
         self.dim = cfg.get("dim", -1)
-
-        self.track_running_stats = cfg.get(
-            "track_running_stats", "none"
-        )  # "none", "center", "scale", "both"
-        self.momentum = cfg.get("momentum", 0.1)
-        self.track_center = False
-        self.center_track_mode = cfg.get("center_track_mode", "center")  # "mean", "center"
-        self.track_scale = False
-        self.scale_track_mode = cfg.get("scale_track_mode", "range")  # "std", "range"
         
-        if (
-            self.track_running_stats.lower() is None
-            or self.track_running_stats.lower() == "none"
-        ):
-            self.track_running_stats = None
-        elif self.track_running_stats.lower() == "center":
-            self.track_center = True
-        elif self.track_running_stats.lower() == "scale":
-            self.track_scale = True
-        elif self.track_running_stats.lower() == "both":
-            self.track_center = True
-            self.track_scale = True
-        else:
-            raise ValueError(
-                f"Unknown track_running_stats option: {self.track_running_stats}"
-            )
+        self.momentum = cfg.get("momentum", 0.1)
+        self.track_center = cfg.get("track_center", False)
+        self.center_track_mode = cfg.get("center_track_mode", "center")  # "mean", "center"
+        self.track_scale = cfg.get("track_scale", False)
+        self.scale_track_mode = cfg.get("scale_track_mode", "range")  # "std", "range"
 
     def _adjust_shape(self, x):
         # adjust shape for broadcasting
@@ -54,7 +37,7 @@ class Normalization(Module):
 
     def track_stats(self, x, mask=None):
         with torch.no_grad():
-            if self.track_running_stats is None or not self.training:
+            if not self.training or (not self.track_center and not self.track_scale):
                 return
 
             # calculate running stats along all other dims except self.dim
@@ -80,6 +63,7 @@ class Normalization(Module):
                     raise ValueError(
                         f"Unknown center tracking mode: {self.center_track_mode}"
                     )
+                self.logger.debug(f"Updated center: {self.center.detach().cpu().numpy().tolist()}")
 
             if self.track_scale:
                 if self.scale_track_mode == "std":
@@ -94,7 +78,7 @@ class Normalization(Module):
                     self.scale.mul_(1 - self.momentum).add_(batch_scale * self.momentum)
                 else:
                     raise ValueError(f"Unknown scale tracking mode: {self.scale_track_mode}")
-
+                self.logger.debug(f"Updated scale: {self.scale.detach().cpu().numpy().tolist()}")
                 self.scale.clamp_(min=1e-6)
 
     def forward(self, x, mask=None):
