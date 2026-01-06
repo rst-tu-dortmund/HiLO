@@ -1,0 +1,6 @@
+# @package _global_
+
+defaults:
+  - override /model: legacy_hilo
+
+name: New_Env_Legacy_HiLO

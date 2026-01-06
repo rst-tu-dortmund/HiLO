@@ -1,0 +1,17 @@
+name: Legacy_HiLO
+
+# model-specific parameters
+param_size: ${data.dim}
+dropout: 0.1
+bbox_drop: 0.0
+cls_drop: 0.0
+max_seq_len: 20
+num_encoder_layers: 2
+num_decoder_layers: 2
+batch_size: ${environment.batch_size}
+num_sensors: ${data.number_of_sensors}
+num_classes: ${data.number_of_classes}
+use_original_encoder: False
+d_model: 64
+dim_feedforward: 128
+nhead: 8

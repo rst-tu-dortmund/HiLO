@@ -16,7 +16,7 @@
                 "environment=kissaf1",
                 "logging.level=DEBUG",
                 "logging.wandb.enabled=False",
-                "environment.batch_size=512",
+                "environment.batch_size=16",
                 "environment.num_workers=0",
                 "model.multi_modal_attention.d_model=128",
                 // "training.visualization.interval=1",
@@ -29,6 +29,22 @@
                 // "training/scheduler=linear_increase",
                 // "+model.detection_normalization.enabled=False",
                 // "model.detection_embedding.enabled=False",
+            ]
+        },
+        {
+            "name": "train legacy HiLO",
+            "justMyCode": false,
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/train.py",
+            "console": "integratedTerminal",
+            "args": [
+                "environment=kissaf1",
+                "model=legacy_hilo",
+                "logging.level=DEBUG",
+                "logging.wandb.enabled=False",
+                "environment.batch_size=16",
+                "environment.num_workers=0",
             ]
         }
     ]

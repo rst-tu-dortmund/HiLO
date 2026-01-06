@@ -32,15 +32,15 @@ class MLP(Module):
         norm_layer = nn.Identity
         if "norm" in cfg:
             norm_layer_name = cfg["norm"]["name"].lower()
-            if norm_layer_name in ["batchnorm", "batchnorm1d", "bn"]:
+            if norm_layer_name in ["batch", "batchnorm", "batchnorm1d", "bn"]:
                 norm_layer = nn.BatchNorm1d
-            elif norm_layer_name in ["layernorm", "ln"]:
+            elif norm_layer_name in ["layer", "layernorm", "ln"]:
                 norm_layer = nn.LayerNorm
-            elif norm_layer_name in ["groupnorm", "gn"]:
+            elif norm_layer_name in ["group", "groupnorm", "gn"]:
                 norm_layer = lambda num_channels: nn.GroupNorm(
                     cfg["norm"]["num_groups"], num_channels
                 )
-            elif norm_layer_name in ["instancenorm", "instancenorm1d", "in"]:
+            elif norm_layer_name in ["instance", "instancenorm", "instancenorm1d", "in"]:
                 norm_layer = InstanceNormWrapper
             else:
                 raise NotImplementedError(

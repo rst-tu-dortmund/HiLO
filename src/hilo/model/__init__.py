@@ -1,9 +1,11 @@
 from .hilo import HiLO
+from.legacy.model import Transformer as LegacyHiLO
 import logging
 
 
 all_models = {
     "hilo": HiLO,
+    "legacy_hilo": LegacyHiLO,
 }
 
 
