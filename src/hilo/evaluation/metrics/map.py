@@ -21,7 +21,6 @@ class NuscMAP:
             "MATCH_STRATEGY": "optimal",  # Matching strategy. Options: "optimal", "greedy" (greedy would be nuScenes style)
             "PRINT_CONFIG": True,  # Whether to print the config information on init. Default: False.
             "VISUALIZE": False,  # Whether to enable visualization of results. Default: False.
-            "CALCULATE_CLR_METRICS": False,  # Whether to calculate CLEAR F1, Precision and Recall. Default: False.
         }
         return default_config
 
@@ -35,8 +34,6 @@ class NuscMAP:
         if cfg.get("PRINT_CONFIG", False):
             self.logger.info("NuscMAP Metric Config:")
             self.logger.info(json.dumps(self.config, indent=4))
-
-        self.calculate_CLR_metrics = cfg.get("CALCULATE_CLR_METRICS", False)
 
         self.classes = classes
         self.used_classes = used_classes
@@ -455,17 +452,11 @@ class NuscMAP:
             ).item(),
         }
 
-        if self.calculate_CLR_metrics:
-            ret_res.update(self.CLR_metrics(comb_res))
-
         # collapse nested dict to flat dict, join keys with "/"
         ret_res = self.flatten_dict(ret_res, sep="/")
 
         return ret_res
 
-    def CLR_metrics(self, all_res):
-        """Calculates class-averaged and detection-averaged metrics."""
-        raise NotImplementedError("CLR metrics not yet implemented for this metric.")
 
     def combine_classes_class_averaged(self, all_res, ignore_empty_classes=False):
         """Combines metrics across all classes by averaging over the class values.

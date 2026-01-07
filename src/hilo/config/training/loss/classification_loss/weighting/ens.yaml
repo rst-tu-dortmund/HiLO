@@ -1,0 +1,5 @@
+defaults:
+  - base_weighting
+
+type: ENS
+beta: 0.9999

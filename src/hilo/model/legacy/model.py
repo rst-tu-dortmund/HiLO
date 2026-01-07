@@ -72,17 +72,17 @@ class Transformer(BaseModel):
         )
         
         # Normalizing ranges
-        xRange = [-100, 100]
+        xRange = cfg["norm"]["x_range"]
         self.register_buffer("xRange", torch.tensor(xRange))
-        yRange = [-100, 100]
+        yRange = cfg["norm"]["y_range"]
         self.register_buffer("yRange", torch.tensor(yRange))
-        lRange = [0, 20]
+        lRange = cfg["norm"]["l_range"]
         self.register_buffer("lRange", torch.tensor(lRange))
-        wRange = [0, 5]
+        wRange = cfg["norm"]["w_range"]
         self.register_buffer("wRange", torch.tensor(wRange))
-        VRange = [-15, 15]
-        self.register_buffer("VRange", torch.tensor(VRange))
-        hRange = [-3, 3]
+        vRange = cfg["norm"]["v_range"]
+        self.register_buffer("vRange", torch.tensor(vRange))
+        hRange = cfg["norm"]["h_range"]
         self.register_buffer("hRange", torch.tensor(hRange))
         
         self._reset_parameters()
@@ -102,16 +102,16 @@ class Transformer(BaseModel):
         y_norm = (data[..., 1] - self.yRange[0]) / (self.yRange[1] - self.yRange[0])
         l_norm = (data[..., 2] - self.lRange[0]) / (self.lRange[1] - self.lRange[0])
         w_norm = (data[..., 3] - self.wRange[0]) / (self.wRange[1] - self.wRange[0])
-        V_norm_0 = (data[..., 4] - self.VRange[0]) / (self.VRange[1] - self.VRange[0])
-        V_norm_1 = (data[..., 5] - self.VRange[0]) / (self.VRange[1] - self.VRange[0])
+        V_norm_0 = (data[..., 4] - self.vRange[0]) / (self.vRange[1] - self.vRange[0])
+        V_norm_1 = (data[..., 5] - self.vRange[0]) / (self.vRange[1] - self.vRange[0])
         h_norm = (data[..., 6] - self.hRange[0]) / (self.hRange[1] - self.hRange[0])
         
         x_std_norm = (data[..., 9] - self.xRange[0]) / (self.xRange[1] - self.xRange[0])
         y_std_norm = (data[..., 10] - self.yRange[0]) / (self.yRange[1] - self.yRange[0])
         l_std_norm = (data[..., 11] - self.lRange[0]) / (self.lRange[1] - self.lRange[0])
         w_std_norm = (data[..., 12] - self.wRange[0]) / (self.wRange[1] - self.wRange[0])
-        V_std_norm_0 = (data[..., 13] - self.VRange[0]) / (self.VRange[1] - self.VRange[0])
-        V_std_norm_1 = (data[..., 14] - self.VRange[0]) / (self.VRange[1] - self.VRange[0])
+        V_std_norm_0 = (data[..., 13] - self.vRange[0]) / (self.vRange[1] - self.vRange[0])
+        V_std_norm_1 = (data[..., 14] - self.vRange[0]) / (self.vRange[1] - self.vRange[0])
         h_std_norm = (data[..., 15] - self.hRange[0]) / (self.hRange[1] - self.hRange[0])
         
         data_norm = torch.stack([
@@ -147,8 +147,8 @@ class Transformer(BaseModel):
             output["extents"][..., 1] * (self.wRange[1] - self.wRange[0]) + self.wRange[0],
         ], dim=-1)
         velocities_denorm = torch.stack([
-            output["velocities"][..., 0] * (self.VRange[1] - self.VRange[0]) + self.VRange[0],
-            output["velocities"][..., 1] * (self.VRange[1] - self.VRange[0]) + self.VRange[0],
+            output["velocities"][..., 0] * (self.vRange[1] - self.vRange[0]) + self.vRange[0],
+            output["velocities"][..., 1] * (self.vRange[1] - self.vRange[0]) + self.vRange[0],
         ], dim=-1)
         
         output["centers"] = centers_denorm

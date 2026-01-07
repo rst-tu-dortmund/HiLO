@@ -1,6 +1,7 @@
 defaults:
   - classification_loss: cross_entropy
   - regression_loss: l2
+  - giou_loss: axis_aligned_giou
   - cost_matrix: default
 
 name: OptimalMatchLoss

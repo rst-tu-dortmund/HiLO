@@ -1,2 +1,7 @@
 __pycache__/
 src/wandb/
+*.o
+*.so
+*.pyc
+src/hilo.egg-info/
+build/

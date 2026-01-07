@@ -1,0 +1,33 @@
+# @package _global_
+
+defaults:
+  - override /model: legacy_hilo
+  - override /training/loss/giou_loss: non_rotated_bev_giou
+
+name: Old_HiLO_New_Loss
+
+training:
+  loss:
+    cost_matrix:
+      size_distance_weight: 0.007
+      classification_weight: 2.6
+      velocity_distance_weight: 0.0
+      orientation_distance_weight: 0.0
+      center_distance_weight: 0.007
+      giou_weight: 9.2 
+    giou_loss:
+      weight: 9.4
+    classification_loss:
+      weight: 3.4
+    regression_loss:
+      center_weight: 0.0004
+      size_weight: 0.0004
+      velocity_weight: 0.0
+      heading_weight: 2.491881744896565
+      weight: 1.0 
+
+model:
+  detection_normalization:
+    enabled: True
+  detection_embedding:
+    enabled: True

@@ -7,7 +7,14 @@ from torch.utils.cpp_extension import (
 
 import setuptools
 
-ext_modules = []
+ext_modules = [
+    CppExtension(
+        name="hilo.evaluation.metrics.iou_bev_cpp",
+        sources=["src/hilo/evaluation/metrics/cpp/iou_bev.cpp"],
+        extra_compile_args=['-O3', '-fopenmp'],
+        extra_link_args=['-lgomp'],
+    )
+]
 
 with open("README.md", "r") as fh:
     long_description = fh.read()

@@ -111,6 +111,7 @@ class Normalization(nn.Module):
         Denormalize values.
 
         - If feature_idcs is provided: x is full-feature tensor and feature_idcs selects channels to denorm.
+          If norm_idcs is also provided, it determines which normalization parameters to use.
         - Else if norm_idcs is provided: x contains only the normalized channels (in order) and will be denormalized.
         """
         if not self.enabled:
@@ -120,8 +121,26 @@ class Normalization(nn.Module):
         if feature_idcs is not None:
             feature_idcs = feature_idcs.to(x.device)
             x_sel = torch.index_select(x, self.dim, feature_idcs)
-            center = self._resolve_param(self.center, x_sel, x)
-            scale = self._resolve_param(self.scale, x_sel, x)
+
+            if norm_idcs is not None:
+                norm_idcs = norm_idcs.to(x.device)
+                if self.center.numel() == norm_idcs.numel():
+                    center = self.center.to(x.device, dtype=x.dtype)
+                elif self.center.numel() > 0:
+                    center = self.center.to(x.device, dtype=x.dtype)[norm_idcs]
+                else:
+                    center = torch.zeros(x_sel.size(self.dim), dtype=torch.float32, device=x.device)
+
+                if self.scale.numel() == norm_idcs.numel():
+                    scale = self.scale.to(x.device, dtype=x.dtype)
+                elif self.scale.numel() > 0:
+                    scale = self.scale.to(x.device, dtype=x.dtype)[norm_idcs]
+                else:
+                    scale = torch.ones(x_sel.size(self.dim), dtype=torch.float32, device=x.device)
+            else:
+                center = self._resolve_param(self.center, x_sel, x)
+                scale = self._resolve_param(self.scale, x_sel, x)
+
             center_b = self._reshape_for_broadcast(center.to(x.device, dtype=x.dtype), x_sel)
             scale_b = self._reshape_for_broadcast(scale.to(x.device, dtype=x.dtype), x_sel)
             x_sel_den = x_sel * scale_b + center_b

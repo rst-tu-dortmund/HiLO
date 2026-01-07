@@ -1,4 +1,7 @@
+from hilo.evaluation.metrics.f1_score import F1Score
 from hilo.evaluation.metrics.map import NuscMAP
+from hilo.evaluation.metrics.utils import rotated_iou_bev
+
 import logging
 import numpy as np
 import torch
@@ -7,13 +10,20 @@ import torch
 class MetricCalculator:
     def __init__(self, metrics_cfg):
         self.cfg = metrics_cfg
-        self.classes = metrics_cfg["classes"]
+        self.classes = metrics_cfg["classes"]   # TODO: why is "no object" included twice?!
         self.num_classes = len(self.classes)
 
         map_cfg = metrics_cfg.get("mAP", None)
         self.map = (
             NuscMAP(metrics_cfg["classes"], metrics_cfg["used_classes"], config=map_cfg)
-            if map_cfg is not None
+            if map_cfg is not None and map_cfg.get("enabled", True)
+            else None
+        )
+        
+        f1_cfg = metrics_cfg.get("F1", None)
+        self.f1 = (
+            F1Score(metrics_cfg["classes"], metrics_cfg["used_classes"], config=f1_cfg)
+            if f1_cfg is not None and f1_cfg.get("enabled", True)
             else None
         )
 
@@ -50,7 +60,15 @@ class MetricCalculator:
             .cpu()
             .numpy()
         )  # B x M x N
-
+        
+        if self.f1 is not None:
+            iou = rotated_iou_bev(
+                batch["gt_data"][..., :7], # x y length width v_x v_y yaw
+                prediction["bboxes"] # x y length width v_x v_y yaw
+            ).detach().cpu().numpy()  # B x M x N
+        else:
+            iou = np.zeros_like(center_distances)
+        
         prep_batch = {
             "num_classes": self.num_classes,
             "gt_classes": [
@@ -71,6 +89,12 @@ class MetricCalculator:
                     center_distances, gt_mask, det_mask
                 )
             ],
+            "iou": [
+                b_iou[b_gt_mask, :][:, b_det_mask]
+                for b_iou, b_gt_mask, b_det_mask in zip(
+                    iou, gt_mask, det_mask
+                )
+            ],
         }
 
         return prep_batch
@@ -78,9 +102,14 @@ class MetricCalculator:
     def batch(self, prediction, batch):
         data = self._pack_data(prediction, batch)
         batch_metrics = {}
+        
         if self.map is not None:
             map_batch_metrics = self.map.eval_batch(data)
             batch_metrics.update(map_batch_metrics)
+            
+        if self.f1 is not None:
+            f1_batch_metrics = self.f1.eval_batch(data)
+            batch_metrics.update(f1_batch_metrics)
 
         self.batch_metrics[self.batch_idx] = batch_metrics
         self.batch_idx += 1
@@ -91,8 +120,13 @@ class MetricCalculator:
         # end of epoch, combine results
         self.logger.info(f"Combining metrics from {self.batch_idx} batches.")
         epoch_metrics = {}
+        
         if self.map is not None:
             epoch_metrics.update(self.map.combine_batches(self.batch_metrics))
+            
+        if self.f1 is not None:
+            epoch_metrics.update(self.f1.combine_batches(self.batch_metrics))
+        
         self.reset()
 
         return epoch_metrics

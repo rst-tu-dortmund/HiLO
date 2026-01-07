@@ -6,7 +6,7 @@
     "configurations": [
 
         {
-            "name": "train HiLO",
+            "name": "train new HiLO new Loss",
             "justMyCode": false,
             "type": "debugpy",
             "request": "launch",
@@ -14,25 +14,28 @@
             "console": "integratedTerminal",
             "args": [
                 "environment=kissaf1",
+                "+experiment=new_hilo_new_loss",
+                // "training.loss.giou_loss.type=non_rotated_bev_giou",
                 "logging.level=DEBUG",
                 "logging.wandb.enabled=False",
                 "environment.batch_size=16",
                 "environment.num_workers=0",
-                "model.multi_modal_attention.d_model=128",
+                // "model.multi_modal_attention.d_model=128",
                 // "training.visualization.interval=1",
                 // "logging.checkpoints.enabled=True",
                 // "logging.checkpoints.topk=3",
                 // "training.scheduler=null",
                 // "model.detection_normalization.track_scale=True",
                 // "model.detection_normalization.track_center=True",
-                "model.fusion_decoder.use_positional_encoding=True",
+                // "model.fusion_decoder.use_positional_encoding=True",
                 // "training/scheduler=linear_increase",
                 // "+model.detection_normalization.enabled=False",
                 // "model.detection_embedding.enabled=False",
+                "data.downsample_factor=60",
             ]
         },
         {
-            "name": "train legacy HiLO",
+            "name": "train old HiLO old loss",
             "justMyCode": false,
             "type": "debugpy",
             "request": "launch",
@@ -40,7 +43,39 @@
             "console": "integratedTerminal",
             "args": [
                 "environment=kissaf1",
-                "model=legacy_hilo",
+                "+experiment=old_hilo_old_loss",
+                "logging.level=DEBUG",
+                "logging.wandb.enabled=False",
+                "environment.batch_size=16",
+                "environment.num_workers=0",
+            ]
+        },
+        {
+            "name": "train new HiLO old loss",
+            "justMyCode": false,
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/train.py",
+            "console": "integratedTerminal",
+            "args": [
+                "environment=kissaf1",
+                "+experiment=new_hilo_old_loss",
+                "logging.level=DEBUG",
+                "logging.wandb.enabled=False",
+                "environment.batch_size=16",
+                "environment.num_workers=0",
+            ]
+        },
+        {
+            "name": "train old HiLO new loss",
+            "justMyCode": false,
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/train.py",
+            "console": "integratedTerminal",
+            "args": [
+                "environment=kissaf1",
+                "+experiment=old_hilo_new_loss",
                 "logging.level=DEBUG",
                 "logging.wandb.enabled=False",
                 "environment.batch_size=16",

@@ -199,9 +199,14 @@ class HiLO(BaseModel):
         # decode fused object representations
         x_dec = self.fusion_decoding(x_mma, mask, pe_feat)
 
-        # predict boxes and classes
+        # predict boxes
         x_dec = einops.rearrange(x_dec, "b q c -> (b q) c")
         box_pred_norm = self.box_regression_head(x_dec)
+        box_pred_norm = torch.cat([
+            box_pred_norm[..., :2],
+            torch.exp(box_pred_norm[..., 2:4]),
+            box_pred_norm[..., 4:],
+        ], dim=-1)
         box_pred = self.detection_normalization.denormalize(
             box_pred_norm,
             feature_idcs=self.denorm_reg_output_idcs,
@@ -209,6 +214,7 @@ class HiLO(BaseModel):
         )
         box_pred = einops.rearrange(box_pred, "(b q) c -> b q c", b=b)
 
+        # predict classes
         class_pred = self.classification_head(x_dec)
         class_pred = einops.rearrange(class_pred, "(b q) c -> b q c", b=b)
 

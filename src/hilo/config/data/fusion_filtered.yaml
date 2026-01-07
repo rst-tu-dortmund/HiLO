@@ -5,6 +5,7 @@ batch_size: ${environment.batch_size}
 preprocess: True
 
 number_of_sensors: 5
+downsample_factor: 1  # Set to >1 to use only every nth sample in the dataset
 
 classes:
   - truck

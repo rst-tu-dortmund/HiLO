@@ -24,11 +24,15 @@ class MLP(Module):
         use_he_init = cfg.get("use_he_init", False)
 
         in_channels = cfg["in_channels"]
-        hidden_channels = cfg["hidden_channels"]
+        hidden_channels = cfg.get("hidden_channels", None)
         out_channels = cfg.get("out_channels", None)
         dropout = cfg.get("dropout", 0.0)
         bias = cfg.get("bias", True)
-
+        
+        if hidden_channels is None:
+            self.mlp = nn.Linear(in_channels, out_channels)
+            return
+            
         norm_layer = nn.Identity
         if "norm" in cfg:
             norm_layer_name = cfg["norm"]["name"].lower()

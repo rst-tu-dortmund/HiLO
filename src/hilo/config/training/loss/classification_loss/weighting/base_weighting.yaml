@@ -1,0 +1,4 @@
+classes: ${data.classes}
+class_counts: ${data.class_counts}
+number_of_samples: ${data.num_samples.train}
+number_of_predicted_objects: ${model.number_of_predictions}

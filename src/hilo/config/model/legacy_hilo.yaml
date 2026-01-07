@@ -1,11 +1,12 @@
 name: Legacy_HiLO
 
 # model-specific parameters
+number_of_predictions: 20
 param_size: ${data.dim}
 dropout: 0.1
 bbox_drop: 0.0
 cls_drop: 0.0
-max_seq_len: 20
+max_seq_len: ${.number_of_predictions}
 num_encoder_layers: 2
 num_decoder_layers: 2
 batch_size: ${environment.batch_size}
@@ -15,3 +16,11 @@ use_original_encoder: False
 d_model: 64
 dim_feedforward: 128
 nhead: 8
+
+norm:
+  x_range: [-100.0, 100.0]
+  y_range: [-100.0, 100.0]
+  l_range: [0.0, 20.0]
+  w_range: [0.0, 5.0]
+  v_range: [-15.0, 15.0]
+  h_range: [-3.0, 3.0]

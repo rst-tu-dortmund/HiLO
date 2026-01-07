@@ -216,6 +216,7 @@ class FusionFilteredDataset(Dataset):
         super(FusionFilteredDataset, self).__init__()
         self.cfg = cfg
         self.split = split
+        self.downsample_factor = int(cfg.get("downsample_factor", 1))
         self.root = os.path.normpath(cfg["data_root"])
         self.preprocessed_root = os.path.join(self.root, "preprocessed")
         self.preprocess = cfg.get("preprocess", False)
@@ -230,7 +231,7 @@ class FusionFilteredDataset(Dataset):
         with open(os.path.join(cfg["data_path"], f"{split}.p"), "rb") as f:
             rel_data_paths = pickle.load(f)
 
-        self.rel_data_paths = rel_data_paths
+        self.rel_data_paths = rel_data_paths[:: self.downsample_factor]
         self.logger = logging.getLogger(__name__)
 
     def __str__(self):

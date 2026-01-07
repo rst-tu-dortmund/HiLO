@@ -2,5 +2,6 @@
 
 defaults:
   - override /model: legacy_hilo
+  - override /training/loss: legacy
 
-name: New_Env_Legacy_HiLO
+name: Old_HiLO_Old_Loss

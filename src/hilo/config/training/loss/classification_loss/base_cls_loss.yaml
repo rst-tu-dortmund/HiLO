@@ -1,2 +1,5 @@
+defaults:
+  - weighting: ens
+
 type: ???
 weight: 1.0

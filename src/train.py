@@ -29,10 +29,17 @@ def train(cfg):
     )
     set_fixed_seed(cfg["training"]["seed"], cfg["training"].get("deterministic", True))
 
+    train_loader = build_dataloader(cfg["data"], split="train")
+
+    val_data_cfg = copy.deepcopy(cfg["data"])
+    val_data_cfg["shuffle"] = False
+    val_loader = build_dataloader(val_data_cfg, split="val")
+    
+    cfg["data"]["num_samples"]["train"] = len(train_loader.dataset)
+    cfg["data"]["num_samples"]["val"] = len(val_loader.dataset)
+
     model = build_model(cfg["model"])
     model.to(cfg["device"])
-
-    train_loader = build_dataloader(cfg["data"], split="train")
 
     loss = build_loss(cfg["training"]["loss"])
     loss.to(cfg["device"])
@@ -48,10 +55,6 @@ def train(cfg):
     lr_scheduler = initialize_lr_scheduler(
         cfg["training"]["scheduler"], optimizer, len(train_loader)
     )
-
-    val_data_cfg = copy.deepcopy(cfg["data"])
-    val_data_cfg["shuffle"] = False
-    val_loader = build_dataloader(val_data_cfg, split="val")
 
     topk_checkpoints = None
 
