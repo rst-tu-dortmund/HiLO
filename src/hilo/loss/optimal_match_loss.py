@@ -103,97 +103,67 @@ class OptimalMatchLoss(Module):
 
         assigned_target_mask = torch.gather(
             target_mask, 1, assigned_target_indices
-        )  # (B, K)
+        )  # (B, K) - True where assignment is to a Valid Target
 
-        assigned_batch_indices = assigned_batch_indices[
-            assigned_target_mask
-        ]  # filter out predictions that where assigned to padded targets
-        assigned_pred_indices = assigned_pred_indices[
-            assigned_target_mask
-        ]  # filter out predictions that where assigned to padded targets
-        assigned_target_indices = assigned_target_indices[assigned_target_mask]
+        # 1. Filter assignments to keep only Valid Matches
+        # We perform valid/padding filtering here to get the list of TP pairs
+        valid_batch_indices = assigned_batch_indices[assigned_target_mask]
+        valid_pred_indices = assigned_pred_indices[assigned_target_mask]
+        valid_target_indices = assigned_target_indices[assigned_target_mask]
 
-        # get indices of unassigned predictions/targets
+        # 2. Extract Matched Pairs explicitly (Preserving Order)
+        # Using simple integer array indexing preserves the pairwise alignment from LSA
+        res_predictions = {
+            k: v[valid_batch_indices, valid_pred_indices] for k, v in pred.items()
+        }
+        res_targets = target[valid_batch_indices, valid_target_indices]
+
+        # 3. Identify Unassigned Predictions (Background)
+        # Create a mask of ALL predictions
         pred_assigned_mask = torch.zeros((B, N), dtype=torch.bool, device=device)
+        # Mark predictions that were assigned to a VALID target as "assigned"
         pred_assigned_mask = torch.index_put(
             pred_assigned_mask,
-            (assigned_batch_indices, assigned_pred_indices),
-            torch.ones_like(assigned_pred_indices, dtype=torch.bool),
+            (valid_batch_indices, valid_pred_indices),
+            torch.ones_like(valid_pred_indices, dtype=torch.bool),
         )
+        
+        # Unassigned = Everything else (including preds assigned to padding)
+        unassigned_pred_mask = ~pred_assigned_mask
 
+        # 4. Extract Unassigned Predictions (Boolean masking is fine here as order doesn't matter for background)
+        # We don't need targets for background (they are generated as 'no-object' label later)
+        unassigned_predictions = {
+            k: v[unassigned_pred_mask] for k, v in pred.items()
+        }
+        
+        # Usually we don't need explicit unmatched targets because we don't supervise them directly
+        # (they are just ignored/missed). But for completeness relative to legacy structure:
         tgt_assigned_mask = torch.zeros((B, M), dtype=torch.bool, device=device)
         tgt_assigned_mask = torch.index_put(
             tgt_assigned_mask,
-            (assigned_batch_indices, assigned_target_indices),
-            torch.ones_like(assigned_target_indices, dtype=torch.bool),
+            (valid_batch_indices, valid_target_indices),
+            torch.ones_like(valid_target_indices, dtype=torch.bool),
         )
-        tgt_assigned_mask = tgt_assigned_mask
-
-        all_pred_indices = torch.stack(
-            (
-                torch.arange(B, device=device).unsqueeze(-1).expand(-1, N),
-                torch.arange(N, device=device).unsqueeze(0).expand(B, -1),
-            ),
-            dim=-1,
-        )  # (B, N, 2)
-        all_target_indices = torch.stack(
-            (
-                torch.arange(B, device=device).unsqueeze(-1).expand(-1, M),
-                torch.arange(M, device=device).unsqueeze(0).expand(B, -1),
-            ),
-            dim=-1,
-        )  # (B, M, 2)
-
-        unassigned_pred_mask = ~pred_assigned_mask
-        unassigned_target_mask = (
-            ~tgt_assigned_mask & target_mask
-        )  # only consider valid targets
-        unassigned_pred_indices = all_pred_indices[
-            unassigned_pred_mask
-        ]  # (num_unassigned_preds, 2)
-        unassigned_target_indices = all_target_indices[
-            unassigned_target_mask
-        ]  # (num_unassigned_targets, 2)
-
-        # assert assigned + unassigned = total
-        assert (
-            assigned_pred_indices.shape[0] + unassigned_pred_indices.shape[0] == B * N
-        ), "total predictions do not match"
-        assert (
-            assigned_target_indices.shape[0] + unassigned_target_indices.shape[0]
-            == torch.sum(target_mask).item()
-        ), "total targets do not match"
-        assert torch.all(
-            pred_assigned_mask + unassigned_pred_mask == 1
-        ).item(), "prediction assignment masks do not match"
-        assert torch.all(
-            tgt_assigned_mask + unassigned_target_mask == target_mask
-        ).item(), "target assignment masks do not match"
-        assert (
-            target_mask[tgt_assigned_mask].all().item()
-        ), "assigned targets must be valid"
-        assert (
-            target[unassigned_target_mask].all().item()
-        ), "unassigned targets must be valid"
+        unassigned_target_mask = ~tgt_assigned_mask & target_mask
+        unassigned_targets = target[unassigned_target_mask]
 
         asso_results = {
             True: {
                 "prediction_indices": torch.stack(
-                    (assigned_batch_indices, assigned_pred_indices), dim=-1
+                    (valid_batch_indices, valid_pred_indices), dim=-1
                 ),
                 "target_indices": torch.stack(
-                    (assigned_batch_indices, assigned_target_indices), dim=-1
+                    (valid_batch_indices, valid_target_indices), dim=-1
                 ),
-                "prediction": {k: v[pred_assigned_mask] for k, v in pred.items()},
-                "target": target[tgt_assigned_mask],
-                # "target_mask": target_mask[tgt_assigned_mask],
+                "prediction": res_predictions,
+                "target": res_targets,
             },
             False: {
-                "prediction_indices": unassigned_pred_indices,
-                "target_indices": unassigned_target_indices,
-                "prediction": {k: v[unassigned_pred_mask] for k, v in pred.items()},
-                "target": target[unassigned_target_mask],
-                # "target_mask": target_mask[unassigned_target_mask],
+                "prediction_indices": torch.nonzero(unassigned_pred_mask),
+                "target_indices": torch.nonzero(unassigned_target_mask),
+                "prediction": unassigned_predictions, 
+                "target": unassigned_targets,
             },
         }
 
@@ -342,7 +312,6 @@ class OptimalMatchLoss(Module):
             losses["total_loss"] = (
                 losses["total_loss"] + self.cls_loss_cfg.get("weight", 1.0) * cls_loss
             )
-            
         
         if self.giou_loss is not None:
             bev_pred_boxes = torch.cat(
