@@ -1,0 +1,9 @@
+# @package _global_
+
+defaults:
+  - override /model: hilo
+
+name: Eval_HiLO_Run_z0y3rr8v
+
+model:
+  inference_filtering_method: hard

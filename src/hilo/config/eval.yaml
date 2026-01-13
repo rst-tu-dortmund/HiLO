@@ -1,0 +1,14 @@
+defaults:
+  - model: hilo
+  - data: urban_fusion_filtered
+  - evaluation: default
+  - logging: default
+  - hydra: default
+  - environment: base_environment
+
+name: HiLO_Eval
+device: cuda
+checkpoint: ??? # Path to checkpoint
+
+data:
+  shuffle: False
