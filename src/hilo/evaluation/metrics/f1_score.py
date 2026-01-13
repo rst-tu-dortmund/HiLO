@@ -145,7 +145,7 @@ class F1Score:
             gt_unassigned_idcs = gt_idcs - set(assignments[:,0])
             
             false_negatives = len(gt_unassigned_idcs)
-            false_positives = pred_unassigned_mask.sum()
+            false_positives = pred_unassigned_mask.sum().item()
             true_positives = M - false_negatives
             
             pred_assigned_mask = ~pred_unassigned_mask
@@ -157,13 +157,13 @@ class F1Score:
             assigned_gt_classes = gt_classes[true_assignments[:, 0]]
             assigned_det_classes = det_classes[true_assignments[:, 1]]
             
-            true_classified = np.sum(assigned_gt_classes == assigned_det_classes)
-            false_classified = np.sum(assigned_gt_classes != assigned_det_classes)
+            true_classified = np.sum(assigned_gt_classes == assigned_det_classes).item()
+            false_classified = np.sum(assigned_gt_classes != assigned_det_classes).item()
 
             sum_true_positives += true_positives
             sum_false_positives += false_positives
             sum_false_negatives += false_negatives
-            sum_assigned_ious += np.sum(assigned_ious)
+            sum_assigned_ious += np.sum(assigned_ious).item()
             sum_true_classified += true_classified
             sum_false_classified += false_classified
         
@@ -233,7 +233,7 @@ class F1Score:
             classified_sum = stats["true_classified"] + stats["false_classified"]
             acc = stats["true_classified"] / classified_sum if classified_sum > 0 else 0.0
 
-            ret_res["threshold_wise_F1"][threshold] = f1.item()
+            ret_res["threshold_wise_F1"][threshold] = f1
             ret_res["threshold_wise_precision"][threshold] = precision
             ret_res["threshold_wise_recall"][threshold] = recall
             ret_res["threshold_wise_mIoU"][threshold] = miou

@@ -18,22 +18,8 @@ class Transformer(BaseModel):
     def __init__(
         self,
         cfg
-        # d_model=64,
-        # nhead=8,
-        # num_encoder_layers=2,
-        # max_seq_len=20,
-        # param_size=18,
-        # num_decoder_layers=2,
-        # dim_feedforward=128,
-        # dropout=0.1,
-        # bbox_drop=0.0,
-        # cls_drop=0.0,
-        # num_sensors=5,
-        # num_classes=5,
-        # batch_size=8,
-        # use_original_encoder=False
     ):  # input with std_dev has 18 params, and without std_dev 11 params
-        super().__init__()
+        super().__init__(cfg)
         self.cfg = cfg
         self.max_seq_len = cfg["max_seq_len"]
         self.d_model = cfg["d_model"]

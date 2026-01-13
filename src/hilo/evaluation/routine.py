@@ -33,6 +33,15 @@ def evaluate_model(
 
             batch_metrics = metric_calculator.batch(outputs, batch_device)
 
+            fig = None
+            if should_visualize(visualize_cfg, batch_idx):
+                fig = plot_sample(
+                    outputs,
+                    batch,
+                    class_names=visualize_cfg.get("class_names", None),
+                    filter_background=visualize_cfg.get("filter_background", True),
+                )
+            
             if use_wandb:
                 log_dict = {
                     f"eval/{k}": v
@@ -41,6 +50,9 @@ def evaluate_model(
                 }
                 log_dict["eval/global_step"] = global_eval_step
                 log_dict["eval/batch_idx"] = batch_idx
+                
+                if fig is not None:
+                    log_dict["visualization/eval/sample"] = fig
 
                 wandb.log(log_dict)
 
@@ -48,21 +60,9 @@ def evaluate_model(
         logger.info(f"Epoch {epoch} evaluation metrics:")
         logger.info(json.dumps(epoch_metrics, indent=4))
 
-        fig = None
-        if should_visualize(visualize_cfg, batch_idx):
-            fig = plot_sample(
-                outputs,
-                batch,
-                class_names=visualize_cfg.get("class_names", None),
-                filter_background=visualize_cfg.get("filter_background", True),
-            )
-
         if use_wandb:
             log_dict = {f"avg/eval/{k}": v for k, v in epoch_metrics.items()}
             log_dict["epoch"] = epoch
-
-            if fig is not None:
-                log_dict["visualization/eval/sample"] = fig
 
             wandb.log(log_dict)
 

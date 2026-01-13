@@ -1,3 +1,4 @@
+import logging
 import os
 import torch
 import numpy as np
@@ -22,7 +23,7 @@ def save_topk_checkpoints(
         for metric in checkpoint_cfg["metrics"]:
             topk_checkpoints[metric] = {
                 "epochs": [epoch],
-                "metrics": np.array(metrics[metric]),
+                "metrics": np.array([metrics[metric]]),
                 "paths": [f"{checkpoint_cfg['dir']}/{metric}_{epoch}.pth"],
             }
             torch.save(
@@ -35,7 +36,7 @@ def save_topk_checkpoints(
                 },
                 topk_checkpoints[metric]["paths"][-1],
             )
-            print(
+            logging.info(
                 f"Saved first checkpoint for {metrics[metric]:.4f} {metric} at epoch {epoch} to {topk_checkpoints[metric]['paths'][-1]}"
             )
     else:
@@ -60,7 +61,7 @@ def save_topk_checkpoints(
                     },
                     path,
                 )
-                print(
+                logging.info(
                     f"Saved new checkpoint for {current_metric:.4f} {metric} at epoch {epoch} to {path}"
                 )
 
@@ -72,6 +73,15 @@ def save_topk_checkpoints(
                     topk_checkpoints[metric]["epochs"][worst_idx] = epoch
                     topk_checkpoints[metric]["metrics"][worst_idx] = current_metric
                     path = f"{checkpoint_cfg['dir']}/{metric}_{epoch}.pth"
+                    
+                    old_path = topk_checkpoints[metric]["paths"][worst_idx]
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                        
+                    logging.info(
+                        f"Removed old checkpoint at {old_path} with {worst_metric:.4f} {metric}"
+                    )
+                                        
                     topk_checkpoints[metric]["paths"][worst_idx] = path
                     torch.save(
                         {
@@ -83,7 +93,7 @@ def save_topk_checkpoints(
                         },
                         path,
                     )
-                    print(
+                    logging.info(
                         f"Saved new checkpoint for {current_metric:.4f} {metric} at epoch {epoch} to {path}"
                     )
 

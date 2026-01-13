@@ -1,6 +1,7 @@
 name: Legacy_HiLO
 
 # model-specific parameters
+inference_filtering_method: NMS_free
 number_of_predictions: 20
 param_size: ${data.dim}
 dropout: 0.1

@@ -18,8 +18,9 @@
                 // "training.loss.giou_loss.type=non_rotated_bev_giou",
                 "logging.level=DEBUG",
                 "logging.wandb.enabled=False",
-                "environment.batch_size=16",
+                // "environment.batch_size=16",
                 "environment.num_workers=0",
+                "evaluation.metrics.F1.enabled=True",
                 // "model.multi_modal_attention.d_model=128",
                 // "training.visualization.interval=1",
                 // "logging.checkpoints.enabled=True",
@@ -31,7 +32,7 @@
                 // "training/scheduler=linear_increase",
                 // "+model.detection_normalization.enabled=False",
                 // "model.detection_embedding.enabled=False",
-                "data.downsample_factor=60",
+                // "data.downsample_factor=100",
             ]
         },
         {
@@ -60,10 +61,15 @@
             "args": [
                 "environment=kissaf1",
                 "+experiment=new_hilo_old_loss",
+                "model.inference_filtering_method=hard",
+                "evaluation.metrics.F1.enabled=True",
                 "logging.level=DEBUG",
                 "logging.wandb.enabled=False",
                 "environment.batch_size=16",
                 "environment.num_workers=0",
+                "data.downsample_factor=100",
+                "\'logging.checkpoints.metrics=[mAP,mean_F1]\'",
+                "logging.checkpoints.enabled=True",
             ]
         },
         {

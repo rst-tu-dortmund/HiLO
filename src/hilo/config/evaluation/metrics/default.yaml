@@ -3,4 +3,5 @@ defaults:
   - F1: default
 
 classes: ${data.classes}
+number_of_classes: ${data.number_of_classes}
 used_classes: ${data.classes}

@@ -4,8 +4,12 @@ from torch.nn import Module
 
 
 class BaseModel(Module):
-    def __init__(self):
+    def __init__(self, cfg):
         super(BaseModel, self).__init__()
+        self.cfg = cfg
+        self.inference_filtering_method = cfg.get(
+            "inference_filtering_method", "nms_free"
+        ).lower()
         
     def prepare_output(self, box_pred, class_pred):
         # compute yaw from sin and cos components
@@ -31,24 +35,42 @@ class BaseModel(Module):
         return output
 
     def _filter_inference_output(self, output):
+        if self.inference_filtering_method == "nms_free":
+            return self.nms_free_filter(output)
+        elif self.inference_filtering_method == "hard":
+            return self.hard_filter(output)
+        else:
+            raise ValueError(
+                f"Unknown inference filtering method: {self.inference_filtering_method}"
+            )
+
+    def hard_filter(self, output):
+        B, N, C = output["class_probs"].shape
+        device = output["class_probs"].device
+        
+        cls_ids = output["class_ids"]
+        is_no_object = cls_ids >= output["class_probs"].shape[-1] - 1
+        
+        scores = torch.gather(
+            output["class_probs"], -1, cls_ids.to(torch.long).unsqueeze(-1)
+        ).squeeze(-1)
+        
+        score_mask = scores >= self.cfg.get("inference_score_threshold", 0.1)
+        keep_mask = ~is_no_object & score_mask
+        output["mask"] = keep_mask
+        
+        return output
+    
+    def nms_free_filter(self, output):
         B, N, C = output["class_probs"].shape
         device = output["class_probs"].device
         ##### applying the NMS free filtering approach from "End-to-End Multi-Object Detection with Transformers"
         # getting the class probabilities without the "no object" class and individually (sigmoid)
-        indv_cls_probs = torch.sigmoid(output["class_probs"][..., :-1])
-        indv_cls_ids = (
-            torch.arange(indv_cls_probs.shape[-1], device=device)
-            .unsqueeze(0)
-            .unsqueeze(0)
-            .repeat(B, N, 1)
-        )
+        indv_cls_probs = torch.sigmoid(output["class_logits"][..., :-1])
+        indv_cls_ids = torch.argmax(indv_cls_probs, dim=-1)  # shape: (B, N)
 
         indv_cls_probs_flat = einops.rearrange(
             indv_cls_probs, "b n c -> b (n c)"
-        )  # shape: (B, N*(num_classes-1))
-
-        indv_cls_ids_flat = einops.rearrange(
-            indv_cls_ids, "b n c -> b (n c)"
         )  # shape: (B, N*(num_classes-1))
 
         topk_prob, topk_prob_idx = torch.topk(
@@ -64,6 +86,12 @@ class BaseModel(Module):
         # apply thresholding
         keep_mask = topk_prob >= self.cfg.get("inference_score_threshold", 0.1)
         output_filtered["mask"] = keep_mask
+        output_filtered["class_probs"] = indv_cls_probs[
+            torch.arange(B, device=device).unsqueeze(-1), topk_obj_idx
+        ]
+        output_filtered["class_ids"] = indv_cls_ids[
+            torch.arange(B, device=device).unsqueeze(-1), topk_obj_idx
+        ]
 
         return output_filtered
 

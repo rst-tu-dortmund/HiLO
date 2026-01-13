@@ -157,7 +157,7 @@ torch::Tensor rotated_iou_bev_cpp(
     torch::Tensor boxes1_mask,
     torch::Tensor boxes2_mask
 ) {
-    // boxes1: (B, M, 7)
+    // boxes1: (B, M, 7)    x, y, length, width, v_x, v_y, yaw
     // boxes2: (B, N, 7)
     // masks: (B, M) and (B, N) - boolean
     

@@ -35,8 +35,12 @@ def train(cfg):
     val_data_cfg["shuffle"] = False
     val_loader = build_dataloader(val_data_cfg, split="val")
     
-    cfg["data"]["num_samples"]["train"] = len(train_loader.dataset)
-    cfg["data"]["num_samples"]["val"] = len(val_loader.dataset)
+    # Keep the sizes as is, as the CE-Loss weight computation depends on it
+    # It uses the class counts and number of samples, class counts are for the whole dataset
+    # Reducing the number of samples here would lead to wrong weights for the no object class!
+    # Keeping it as is, assumes that the reduced dataset follows the same distributions as the full one
+    # cfg["data"]["num_samples"]["train"] = len(train_loader.dataset)
+    # cfg["data"]["num_samples"]["val"] = len(val_loader.dataset)
 
     model = build_model(cfg["model"])
     model.to(cfg["device"])

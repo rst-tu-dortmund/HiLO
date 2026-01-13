@@ -16,7 +16,7 @@ from hilo.utils.data.normalization import Normalization
 
 class HiLO(BaseModel):
     def __init__(self, cfg):
-        super(HiLO, self).__init__()
+        super(HiLO, self).__init__(cfg)
         # Initialize model components based on model cfg
         # This is a placeholder implementation
         self.cfg = cfg

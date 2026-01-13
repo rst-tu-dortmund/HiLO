@@ -1,5 +1,6 @@
 name: HiLO
 
+inference_filtering_method: NMS_free
 input_dim: ${data.dim}
 number_of_classes: ${data.number_of_classes}
 number_of_predictions: 20

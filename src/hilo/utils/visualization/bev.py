@@ -56,19 +56,22 @@ def plot_sample(
         .numpy()
     )
 
-    if filter_background:
-        pred_mask = (
-            (
-                model_output["class_ids"][batch_idx]
-                < model_output["class_probs"].shape[-1] - 1
-            )
-            .detach()
-            .cpu()
-            .numpy()
-        )  # Exclude background class
-        pred_mask &= pred_scores > score_threshold
+    if "mask" in model_output:
+        pred_mask = model_output["mask"][batch_idx].detach().cpu().numpy()
     else:
-        pred_mask = pred_scores > score_threshold
+        if filter_background:
+            pred_mask = (
+                (
+                    model_output["class_ids"][batch_idx]
+                    < model_output["class_probs"].shape[-1] - 1
+                )
+                .detach()
+                .cpu()
+                .numpy()
+            )  # Exclude background class
+            pred_mask &= pred_scores > score_threshold
+        else:
+            pred_mask = pred_scores > score_threshold
 
     pred_boxes = pred_boxes[pred_mask]
     pred_scores = pred_scores[pred_mask]
@@ -187,7 +190,7 @@ def plot_association_results(
     fig = go.Figure()
 
     if class_names is not None:
-        class_names.append("no object")  # Add background class name
+        class_names_ = class_names + ["no object"]  # Add background class name
 
     matched_batch_mask = (
         association_results[True]["prediction_indices"][..., 0] == batch_idx
@@ -244,7 +247,7 @@ def plot_association_results(
 
     render_boxes_with_scores(
         0.0,
-        class_names,
+        class_names_,
         fig,
         matched_pred_objs,
         "Matched Predicted Box",
@@ -258,7 +261,7 @@ def plot_association_results(
 
     render_boxes_with_scores(
         0.0,
-        class_names,
+        class_names_,
         fig,
         matched_gt_boxes,
         "Matched Ground Truth Box",
@@ -314,7 +317,7 @@ def plot_association_results(
 
     render_boxes_with_scores(
         0.0,
-        class_names,
+        class_names_,
         fig,
         unmatched_pred_objs,
         "Unmatched Predicted Box",

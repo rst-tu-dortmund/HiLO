@@ -11,7 +11,7 @@ class MetricCalculator:
     def __init__(self, metrics_cfg):
         self.cfg = metrics_cfg
         self.classes = metrics_cfg["classes"]   # TODO: why is "no object" included twice?!
-        self.num_classes = len(self.classes)
+        self.num_classes = metrics_cfg["number_of_classes"]
 
         map_cfg = metrics_cfg.get("mAP", None)
         self.map = (
@@ -52,8 +52,8 @@ class MetricCalculator:
             .numpy()
         )  # B x N
 
-        det_mask = det_classes < self.num_classes
-
+        det_mask = prediction['mask'].detach().cpu().numpy().astype(bool)
+        
         center_distances = (
             torch.cdist(batch["gt_data"][..., :2], prediction["centers"])
             .detach()
@@ -82,6 +82,18 @@ class MetricCalculator:
             "detector_confidences": [
                 b_det_confidences[b_det_mask]
                 for b_det_confidences, b_det_mask in zip(det_confidences, det_mask)
+            ],
+            "detector_boxes": [
+                b_det_boxes[b_det_mask]
+                for b_det_boxes, b_det_mask in zip(
+                    prediction["bboxes"].detach().cpu().numpy(), det_mask
+                )
+            ],
+            "gt_boxes": [
+                b_gt_boxes[b_gt_mask, :7]
+                for b_gt_boxes, b_gt_mask in zip(
+                    batch["gt_data"].detach().cpu().numpy(), gt_mask
+                )
             ],
             "center_distances": [
                 b_center_distances[b_gt_mask, :][:, b_det_mask]
