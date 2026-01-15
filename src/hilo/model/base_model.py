@@ -14,8 +14,8 @@ class BaseModel(Module):
     def prepare_output(self, box_pred, class_pred):
         # compute yaw from sin and cos components
         yaw = torch.atan2(
-            box_pred[..., -2], box_pred[..., -1]
-        )  # assuming last two channels are sin(yaw) and cos(yaw)
+            box_pred[..., -1], box_pred[..., -2]
+        )  # assuming last two channels are cos(yaw) and sin(yaw)
         # box_pred = torch.cat([box_pred[..., :-2], yaw.unsqueeze(-1)], dim=-1)
         output = {
             "centers": box_pred[..., :2],
