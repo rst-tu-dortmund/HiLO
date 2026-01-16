@@ -1,6 +1,6 @@
-center_distance_weight: 1.0
-size_distance_weight: 1.0
-giou_weight: 1.0
-orientation_distance_weight: 1.0
-velocity_distance_weight: 1.0
-classification_weight: 1.0
+size_distance_weight: 0.7986672541117515
+classification_weight: 2.900754757045001
+velocity_distance_weight: 0.0
+orientation_distance_weight: 0.0
+center_distance_weight: 0.8247532450144732
+giou_weight: 2.030069247262796

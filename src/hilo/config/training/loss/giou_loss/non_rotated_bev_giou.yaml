@@ -1,3 +1,3 @@
 type: non_rotated_bev_giou
-weight: 1.0
+weight: 6.398908865239739
 reduction: mean

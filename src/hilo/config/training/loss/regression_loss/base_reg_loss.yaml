@@ -1,2 +1,6 @@
 type: ???
 weight: 1.0
+center_weight: 0.025603907755619937
+size_weight: 0.8276020031586422
+velocity_weight: 0.1
+heading_weight: 0.4966909048270792
