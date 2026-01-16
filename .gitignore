@@ -6,3 +6,4 @@ src/wandb/
 src/hilo.egg-info/
 build/
 .vscode/
+**/environment/
