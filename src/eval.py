@@ -52,7 +52,7 @@ def evaluate(cfg):
     val_data_cfg["shuffle"] = False
     
     logger.info("Building dataloader...")
-    val_loader = build_dataloader(val_data_cfg, split="val")
+    val_loader = build_dataloader(val_data_cfg, split=cfg.get("split", "val"))
     logger.info(f"Dataloader built with {len(val_loader)} batches.")
 
     # Build model

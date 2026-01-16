@@ -14,7 +14,7 @@
             "console": "integratedTerminal",
             "args": [
                 "environment=kissaf1",
-                "+experiment=new_hilo_new_loss",
+                "+experiment=train/hilo_highway",
                 // "training.loss.giou_loss.type=non_rotated_bev_giou",
                 "logging.level=DEBUG",
                 "logging.wandb.enabled=False",

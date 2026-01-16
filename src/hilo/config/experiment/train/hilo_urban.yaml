@@ -1,0 +1,47 @@
+# @package _global_
+
+defaults:
+  - override /model: hilo
+  - override /data: urban_fusion_filtered
+  - override /training/loss/giou_loss: non_rotated_bev_giou
+
+name: Urban_HiLO
+
+logging:
+  checkpoints:
+    enabled: True
+    metrics: [mAP, mean_F1]
+
+training:
+  loss:
+    cost_matrix:
+      size_distance_weight: 0.7986672541117515
+      classification_weight: 2.900754757045001
+      velocity_distance_weight: 0.0
+      orientation_distance_weight: 0.0
+      center_distance_weight: 0.8247532450144732
+      giou_weight: 2.030069247262796
+    giou_loss:
+      weight: 6.398908865239739
+    classification_loss:
+      weight: 8.89858319910962
+    regression_loss:
+      center_weight: 0.025603907755619937
+      size_weight: 0.8276020031586422
+      velocity_weight: 0.1
+      heading_weight: 0.4966909048270792
+      weight: 1.0 
+
+evaluation:
+  metrics:
+    F1:
+      enabled: True
+    mAP:
+      PRECISION_THRESHOLD: 0.0
+
+model:
+  inference_filtering_method: hard
+  detection_normalization:
+    enabled: True
+  detection_embedding:
+    enabled: True
