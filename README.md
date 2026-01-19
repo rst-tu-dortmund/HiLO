@@ -4,8 +4,25 @@ This is the official repo for "High-Level Object Fusion for Autonomous Driving u
 [arXiv](https://arxiv.org/abs/2506.02554) | [DOI](https://www.doi.org/10.1109/IV64158.2025.11097611) | [BibTeX](#citation)
 
 ## Installation
-Tested with python 3.10.18, pytorch 2.7.1 and cuda 12.8.
+Tested on Ubuntu 22.04 with python 3.10.18, pytorch 2.7.1 and cuda 12.8.
 See the exported conda environment at [environment.yaml](environment.yaml).
+### With conda
+```bash
+conda create -n hilo python==3.10
+conda activate hilo
+
+conda install cuda -c nvidia/label/cuda-12.8.1
+
+git clone https://github.com/rst-tu-dortmund/HiLO.git
+cd HiLO
+
+pip install -r requirements.txt
+pip install -e .
+```
+
+### Other
+1. Install CUDA on your machine or inside your environment [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/) / [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/).
+2. Install requirements and HiLO:
 ```bash
 pip install -r requirements.txt
 pip install -e .
@@ -36,7 +53,7 @@ python src/train.py environment=YOUR_ENVIRONMENT +experiment=train/hilo_urban
 ### Evaluation
 To evaluate the model, see the following example command with experiment [eval/urban_trained/on_urban](src/hilo/config/experiment/eval/urban_trained/on_urban.yaml) which evaluates the urban trained HiLO model on urban data:
 ```bash
-python src/eval.py environment=kissaf1 +experiment=eval/urban_trained/on_urban
+python src/eval.py environment=YOUR_ENVIRONMENT +experiment=eval/urban_trained/on_urban
 ```
 By default, this will evaluate the model on the validation split.
 Add this argument to compute the metrics on the test split:
