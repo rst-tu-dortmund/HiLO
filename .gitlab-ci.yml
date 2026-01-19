@@ -1,0 +1,14 @@
+stages:
+  - formatting
+
+
+black-checker:
+  image: pyfound/black:latest_release
+  stage: formatting
+  tags:
+      - docker
+      - ubuntu
+  script:
+    - black --check ./src
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
