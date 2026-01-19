@@ -1,0 +1,22 @@
+einops==0.8.1
+hydra-core==1.3.2
+kaleido==1.1.0
+numpy==2.2.6
+omegaconf==2.3.0
+omegaconf_resolver @ git+ssh://git@github.com:rst-tu-dortmund/omegaconf_resolver.git
+opencv-python==4.12.0.88
+pandas==2.3.1
+pillow==11.3.0
+plotly==6.3.1
+protobuf==6.31.1
+pybind11==3.0.1
+pytest==8.4.2
+pytest-cov==7.0.0
+pytest-timeout==2.4.0
+scipy==1.15.3
+shapely==2.1.2
+torch==2.7.1
+torchaudio==2.7.1
+torchvision==0.22.1
+tqdm==4.67.1
+wandb==0.21.0
