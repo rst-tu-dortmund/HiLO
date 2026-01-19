@@ -1,0 +1,7 @@
+# @package _global_
+
+defaults:
+  - override /data: urban_fusion_filtered
+  - override /model: hilo
+
+name: EvalUrbanHiLOUrban

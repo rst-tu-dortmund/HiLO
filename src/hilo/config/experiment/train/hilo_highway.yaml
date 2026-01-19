@@ -5,7 +5,7 @@ defaults:
   - override /data: highway_fusion_filtered
   - override /training/loss/giou_loss: non_rotated_bev_giou
 
-name: Highway_HiLO
+name: HighwayHiLO
 
 logging:
   checkpoints:

@@ -1,0 +1,7 @@
+# @package _global_
+
+defaults:
+  - eval/highway_trained/checkpoint
+  - eval/on_highway
+
+name: EvalHighwayHiLOHighway

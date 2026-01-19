@@ -1,8 +1,0 @@
-# @package _global_
-
-defaults:
-  - override /model: hilo
-  - override /data: comb_fusion_filtered
-  - override /training/loss/giou_loss: non_rotated_bev_giou
-
-name: Comb_HiLO
