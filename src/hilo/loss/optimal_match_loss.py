@@ -8,7 +8,13 @@ from torch.nn import functional as F
 from scipy.optimize import linear_sum_assignment
 
 from hilo.loss.focal_loss import FocalLoss
-from hilo.loss.giou_loss import AxisAlignedBevGIoULoss, NonRotatedBevGIoULoss, axis_aligned_bev_giou, non_rotated_bev_giou
+from hilo.loss.giou_loss import (
+    AxisAlignedBevGIoULoss,
+    NonRotatedBevGIoULoss,
+    axis_aligned_bev_giou,
+    non_rotated_bev_giou,
+)
+
 
 class OptimalMatchLoss(Module):
     def __init__(self, cfg):
@@ -19,7 +25,7 @@ class OptimalMatchLoss(Module):
 
         self.cls_loss_cfg = cfg.get("classification_loss", {})
         self._init_classification_loss(self.cls_loss_cfg)
-        
+
         self.giou_loss_cfg = cfg.get("giou_loss", {})
         self._init_giou_loss(self.giou_loss_cfg)
 
@@ -38,48 +44,52 @@ class OptimalMatchLoss(Module):
         cls_weights = self.get_class_weights(cls_cfg.get("weighting", {}))
         cls_type = cls_cfg.get("type", "cross_entropy").lower()
         if cls_type == "cross_entropy":
-            self.cls_loss = nn.CrossEntropyLoss(**cls_cfg.get("kwargs", {}), weight=cls_weights)
+            self.cls_loss = nn.CrossEntropyLoss(
+                **cls_cfg.get("kwargs", {}), weight=cls_weights
+            )
         elif cls_type == "focal":
             self.cls_loss = FocalLoss(cls_cfg)
         else:
             raise ValueError(f"Unsupported classification loss type: {cls_type}")
-    
+
     def get_class_weights(self, weighting_cfg):
         type = weighting_cfg.get("type", "none").lower()
         if type == "none":
             return None
-        
+
         class_counts_dict = weighting_cfg["class_counts"]
-        
-        class_counts = [
-            class_counts_dict[cls] for cls in weighting_cfg["classes"]
-        ]
-        
+
+        class_counts = [class_counts_dict[cls] for cls in weighting_cfg["classes"]]
+
         num_objs = sum(class_counts)
-        
-        class_counts.append(weighting_cfg["number_of_samples"] * weighting_cfg["number_of_predicted_objects"] - num_objs)
-        class_counts = torch.tensor(class_counts, dtype=torch.float32)        
-        
-        if type == "ins": # Inverse Number of Samples
+
+        class_counts.append(
+            weighting_cfg["number_of_samples"]
+            * weighting_cfg["number_of_predicted_objects"]
+            - num_objs
+        )
+        class_counts = torch.tensor(class_counts, dtype=torch.float32)
+
+        if type == "ins":  # Inverse Number of Samples
             weights = 1.0 / (class_counts + 1)
             weights = weights / weights.sum()
             return weights
 
-        elif type == "isns": # Inverse Square Root Number of Samples
+        elif type == "isns":  # Inverse Square Root Number of Samples
             weights = 1.0 / torch.sqrt(class_counts + 1)
             weights = weights / weights.sum()
             return weights
-        
-        elif type == "ens": # Effective Number of Samples
+
+        elif type == "ens":  # Effective Number of Samples
             beta = weighting_cfg.get("beta", 0.9999)
             effective_num = 1.0 - torch.pow(beta, class_counts)
             weights = (1.0 - beta) / (effective_num + 1e-8)
             weights = weights / weights.sum()
             return weights
-        
+
         else:
             raise ValueError(f"Unsupported classification weighting type: {type}")
-    
+
     def _init_giou_loss(self, giou_cfg):
         giou_type = giou_cfg.get("type", "axis_aligned_bev_giou").lower()
         if giou_type == "axis_aligned_bev_giou":
@@ -127,16 +137,14 @@ class OptimalMatchLoss(Module):
             (valid_batch_indices, valid_pred_indices),
             torch.ones_like(valid_pred_indices, dtype=torch.bool),
         )
-        
+
         # Unassigned = Everything else (including preds assigned to padding)
         unassigned_pred_mask = ~pred_assigned_mask
 
         # 4. Extract Unassigned Predictions (Boolean masking is fine here as order doesn't matter for background)
         # We don't need targets for background (they are generated as 'no-object' label later)
-        unassigned_predictions = {
-            k: v[unassigned_pred_mask] for k, v in pred.items()
-        }
-        
+        unassigned_predictions = {k: v[unassigned_pred_mask] for k, v in pred.items()}
+
         # Usually we don't need explicit unmatched targets because we don't supervise them directly
         # (they are just ignored/missed). But for completeness relative to legacy structure:
         tgt_assigned_mask = torch.zeros((B, M), dtype=torch.bool, device=device)
@@ -162,7 +170,7 @@ class OptimalMatchLoss(Module):
             False: {
                 "prediction_indices": torch.nonzero(unassigned_pred_mask),
                 "target_indices": torch.nonzero(unassigned_target_mask),
-                "prediction": unassigned_predictions, 
+                "prediction": unassigned_predictions,
                 "target": unassigned_targets,
             },
         }
@@ -288,7 +296,7 @@ class OptimalMatchLoss(Module):
                 raise ValueError(
                     "Found invalid class labels in assigned targets for classification loss."
                 )
-            
+
             tgt_cls = torch.cat(
                 [
                     asso_results[True]["target"][..., 7].long(),
@@ -312,7 +320,7 @@ class OptimalMatchLoss(Module):
             losses["total_loss"] = (
                 losses["total_loss"] + self.cls_loss_cfg.get("weight", 1.0) * cls_loss
             )
-        
+
         if self.giou_loss is not None:
             bev_pred_boxes = torch.cat(
                 [
@@ -332,7 +340,7 @@ class OptimalMatchLoss(Module):
             )  # (num_assigned, 5)
 
             bev_giou_loss = self.giou_loss(bev_pred_boxes, bev_target_boxes)
-            
+
             losses["bev_giou_loss"] = bev_giou_loss
             losses["total_loss"] = (
                 losses["total_loss"]
@@ -378,7 +386,7 @@ class OptimalMatchLoss(Module):
             )
             costs["size_cost"] = size_cost
             costs["weighted_size_cost"] = weighted_size_cost
-            
+
         if self.cost_matrix_cfg.get("giou_weight", 0.0) > 0.0:
             pred_boxes = torch.cat(
                 [
@@ -441,7 +449,9 @@ class OptimalMatchLoss(Module):
 
             # −log P(class) per (N,M) pair
             log_probs = F.log_softmax(pred_class_logits, dim=-1)  # (B, N, C)
-            cls_cost = torch.gather(-log_probs, dim=2, index=tgt.unsqueeze(1).expand(-1, N, -1))
+            cls_cost = torch.gather(
+                -log_probs, dim=2, index=tgt.unsqueeze(1).expand(-1, N, -1)
+            )
 
             weighted_cls_cost = self.cost_matrix_cfg["classification_weight"] * cls_cost
             cost_matrix = torch.where(

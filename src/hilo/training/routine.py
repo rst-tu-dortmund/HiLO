@@ -23,11 +23,15 @@ def train_one_epoch(
     device = next(model.parameters()).device
     epoch_loss = None
     logger_mode_debug = logger.isEnabledFor(logging.DEBUG)
-    
+
     if logger_mode_debug:
-        gt_cls = torch.unique(batch_device["gt_data"][batch_device["gt_mask"]][..., 7], return_counts=True)
-        logger.debug(f"Ground truth class distribution: {gt_cls[0].detach().cpu().numpy().tolist()} with counts {gt_cls[1].detach().cpu().numpy().tolist()}")
-    
+        gt_cls = torch.unique(
+            batch_device["gt_data"][batch_device["gt_mask"]][..., 7], return_counts=True
+        )
+        logger.debug(
+            f"Ground truth class distribution: {gt_cls[0].detach().cpu().numpy().tolist()} with counts {gt_cls[1].detach().cpu().numpy().tolist()}"
+        )
+
     num_batches = len(train_loader)
     pbar_batches = tqdm(
         train_loader, desc="Batches", position=1, leave=False, total=num_batches
@@ -41,9 +45,9 @@ def train_one_epoch(
         losses, assignment_cost, association_results = loss(
             outputs, batch_device["gt_data"], batch_device["gt_mask"]
         )
-        
+
         losses["total_loss"].backward()
-            
+
         optimizer.step()
         optimizer.zero_grad()
         if epoch_loss is None:

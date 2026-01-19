@@ -28,11 +28,11 @@ class MLP(Module):
         out_channels = cfg.get("out_channels", None)
         dropout = cfg.get("dropout", 0.0)
         bias = cfg.get("bias", True)
-        
+
         if hidden_channels is None:
             self.mlp = nn.Linear(in_channels, out_channels)
             return
-            
+
         norm_layer = nn.Identity
         if "norm" in cfg:
             norm_layer_name = cfg["norm"]["name"].lower()
@@ -44,7 +44,12 @@ class MLP(Module):
                 norm_layer = lambda num_channels: nn.GroupNorm(
                     cfg["norm"]["num_groups"], num_channels
                 )
-            elif norm_layer_name in ["instance", "instancenorm", "instancenorm1d", "in"]:
+            elif norm_layer_name in [
+                "instance",
+                "instancenorm",
+                "instancenorm1d",
+                "in",
+            ]:
                 norm_layer = InstanceNormWrapper
             else:
                 raise NotImplementedError(

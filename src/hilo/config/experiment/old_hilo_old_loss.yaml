@@ -1,7 +1,0 @@
-# @package _global_
-
-defaults:
-  - override /model: legacy_hilo
-  - override /training/loss: legacy
-
-name: Old_HiLO_Old_Loss

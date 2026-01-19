@@ -5,3 +5,6 @@ src/wandb/
 *.pyc
 src/hilo.egg-info/
 build/
+.vscode/
+**/environment/
+**/*.egg-info/

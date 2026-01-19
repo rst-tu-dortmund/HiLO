@@ -20,6 +20,7 @@ class Normalization(nn.Module):
             feature_idcs will be denormalized in-place and returned.
           * If norm_idcs is provided, x contains only the normalized channels (in order) and will be denormalized.
     """
+
     def __init__(self, cfg=None):
         super().__init__()
         cfg = cfg or {}
@@ -48,14 +49,20 @@ class Normalization(nn.Module):
         self.register_buffer("center", center_t)
         self.register_buffer("scale", scale_t)
 
-    def _resolve_param(self, param_buf: torch.Tensor, x_sel: torch.Tensor, x_full: torch.Tensor):
+    def _resolve_param(
+        self, param_buf: torch.Tensor, x_sel: torch.Tensor, x_full: torch.Tensor
+    ):
         """Return a tensor for param matching x_sel.size(self.dim). Accepts param either for selection or full-length."""
         if param_buf is None or param_buf.numel() == 0:
             # default center=0, scale=1
             if param_buf is self.center:
-                return torch.zeros(x_sel.size(self.dim), dtype=torch.float32, device=x_sel.device)
+                return torch.zeros(
+                    x_sel.size(self.dim), dtype=torch.float32, device=x_sel.device
+                )
             else:
-                return torch.ones(x_sel.size(self.dim), dtype=torch.float32, device=x_sel.device)
+                return torch.ones(
+                    x_sel.size(self.dim), dtype=torch.float32, device=x_sel.device
+                )
 
         p = param_buf.to(x_sel.device, dtype=torch.float32)
         # if p matches selected length already, use directly
@@ -129,20 +136,28 @@ class Normalization(nn.Module):
                 elif self.center.numel() > 0:
                     center = self.center.to(x.device, dtype=x.dtype)[norm_idcs]
                 else:
-                    center = torch.zeros(x_sel.size(self.dim), dtype=torch.float32, device=x.device)
+                    center = torch.zeros(
+                        x_sel.size(self.dim), dtype=torch.float32, device=x.device
+                    )
 
                 if self.scale.numel() == norm_idcs.numel():
                     scale = self.scale.to(x.device, dtype=x.dtype)
                 elif self.scale.numel() > 0:
                     scale = self.scale.to(x.device, dtype=x.dtype)[norm_idcs]
                 else:
-                    scale = torch.ones(x_sel.size(self.dim), dtype=torch.float32, device=x.device)
+                    scale = torch.ones(
+                        x_sel.size(self.dim), dtype=torch.float32, device=x.device
+                    )
             else:
                 center = self._resolve_param(self.center, x_sel, x)
                 scale = self._resolve_param(self.scale, x_sel, x)
 
-            center_b = self._reshape_for_broadcast(center.to(x.device, dtype=x.dtype), x_sel)
-            scale_b = self._reshape_for_broadcast(scale.to(x.device, dtype=x.dtype), x_sel)
+            center_b = self._reshape_for_broadcast(
+                center.to(x.device, dtype=x.dtype), x_sel
+            )
+            scale_b = self._reshape_for_broadcast(
+                scale.to(x.device, dtype=x.dtype), x_sel
+            )
             x_sel_den = x_sel * scale_b + center_b
             x_out = x.clone()
             x_out.index_copy_(self.dim, feature_idcs, x_sel_den)
@@ -150,7 +165,9 @@ class Normalization(nn.Module):
 
         # Case B: x contains only normalized channels; norm_idcs tells where to place them
         if norm_idcs is None:
-            raise ValueError("When denormalizing a tensor of selected channels, 'norm_idcs' must be provided.")
+            raise ValueError(
+                "When denormalizing a tensor of selected channels, 'norm_idcs' must be provided."
+            )
 
         norm_idcs = norm_idcs.to(x.device)
         # determine center/scale for these norm_idcs relative to full (try matching lengths)

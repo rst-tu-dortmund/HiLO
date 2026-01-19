@@ -104,38 +104,40 @@ def plot_sample(
         width=800,
         height=800,
     )
-    
+
     # Plot input boxes
     # get sample data
     # N x 18: x y l w v_x v_y h class score x_std y_std l_std w_std v_x_std v_y_std h_std sensor_id time_to_gt
-    in_data = data['data'][batch_idx].detach().cpu().numpy()
-    in_mask = data['mask'][batch_idx].detach().cpu().numpy()
-    
-    sensor_names = ["RADAR_RR0","RADAR_RL0", "RADAR_FR0", "RADAR_FL0", "CAMERA_FC0"]
-    sensor_colors = ['orange', 'purple', 'cyan', 'magenta', 'yellow']
-    
+    in_data = data["data"][batch_idx].detach().cpu().numpy()
+    in_mask = data["mask"][batch_idx].detach().cpu().numpy()
+
+    sensor_names = ["RADAR_RR0", "RADAR_RL0", "RADAR_FR0", "RADAR_FL0", "CAMERA_FC0"]
+    sensor_colors = ["orange", "purple", "cyan", "magenta", "yellow"]
+
     for sens_data, sens_mask, color in zip(in_data, in_mask, sensor_colors):
         # plot each sensor separately with different color
         if not np.any(sens_mask):
             continue
-        
+
         in_data = sens_data[sens_mask]
-    
+
         in_boxes = in_data[..., :7]  # x y l w v_x v_y h
         in_classes = in_data[..., 7].astype(np.int64)  # class
         in_scores = in_data[..., 8]  # score
-        
+
         in_sens_id = in_data[..., 16].astype(np.int64)
         color = sensor_colors[in_sens_id[0]]
         sens_name = sensor_names[in_sens_id[0]]
-    
+
         in_objs = np.concatenate(
             (in_boxes, in_classes[..., None], in_scores[..., None]),
             axis=-1,
         )
-        
-        render_boxes_with_scores(score_threshold, class_names_, fig, in_objs, sens_name, color)
-    
+
+        render_boxes_with_scores(
+            score_threshold, class_names_, fig, in_objs, sens_name, color
+        )
+
     return fig
 
 

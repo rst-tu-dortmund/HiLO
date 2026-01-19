@@ -2,10 +2,10 @@
 
 defaults:
   - override /model: hilo
-  - override /data: urban_fusion_filtered
+  - override /data: combined_fusion_filtered
   - override /training/loss/giou_loss: non_rotated_bev_giou
 
-name: UrbanHiLO
+name: CombHiLO
 
 logging:
   checkpoints:

@@ -1,0 +1,3 @@
+# @package _global_
+
+checkpoint: model_weights/urban/mean_F1_98.pth

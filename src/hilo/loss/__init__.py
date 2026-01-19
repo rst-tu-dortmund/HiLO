@@ -1,9 +1,7 @@
 from .optimal_match_loss import OptimalMatchLoss
-from.legacy.loss import LegacyMatchingLoss
 
 all_losses = {
     "optimalmatchloss": OptimalMatchLoss,
-    "legacymatchingloss": LegacyMatchingLoss,
 }
 
 

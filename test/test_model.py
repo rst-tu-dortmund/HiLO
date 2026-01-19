@@ -7,7 +7,9 @@ import pytest
 try:
     import torch
 except Exception:
-    pytest.skip("PyTorch is not installed - skipping HiLO model test", allow_module_level=True)
+    pytest.skip(
+        "PyTorch is not installed - skipping HiLO model test", allow_module_level=True
+    )
 
 # Ensure `src` is on path so `hilo` package can be imported when running tests
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -42,7 +44,9 @@ def make_toy_batch(batch_size=16, sensors=1, detections=1, feat_dim=6):
     return x, mask
 
 
-def build_minimal_cfg(feat_dim=6, d_model=16, num_queries=1, num_classes=2, norm_layer="layer"):
+def build_minimal_cfg(
+    feat_dim=6, d_model=16, num_queries=1, num_classes=2, norm_layer="layer"
+):
     # Minimal config dictionary matching expectations of HiLO
     cfg = {}
     cfg["no_mma_tf_masks"] = True
@@ -89,12 +93,15 @@ def build_minimal_cfg(feat_dim=6, d_model=16, num_queries=1, num_classes=2, norm
             "output_indices": list(range(box_out)),
             "norm_indices": list(range(box_out)),
         },
-        "norm": {"name": norm_layer}
+        "norm": {"name": norm_layer},
     }
 
-    cfg["classification_head"] = {"in_channels": d_model,
-                                  "hidden_channels": [d_model], "out_channels": num_classes,
-                                  "norm": {"name": norm_layer}}
+    cfg["classification_head"] = {
+        "in_channels": d_model,
+        "hidden_channels": [d_model],
+        "out_channels": num_classes,
+        "norm": {"name": norm_layer},
+    }
 
     cfg["max_range"] = 100.0
     cfg["inference_score_threshold"] = 0.0
@@ -118,13 +125,17 @@ def test_hilo_learns_centers_cuda_or_cpu():
     num_batches = 100
 
     # generate dataset on CPU (moved to device per-batch during training)
-    data_batches = [make_toy_batch(batch_size=B, sensors=S, detections=N, feat_dim=C) for _ in range(num_batches)]
+    data_batches = [
+        make_toy_batch(batch_size=B, sensors=S, detections=N, feat_dim=C)
+        for _ in range(num_batches)
+    ]
 
     cfg = build_minimal_cfg(feat_dim=C, d_model=16, num_queries=Q, num_classes=2)
     box_out = cfg["box_regression_head"]["out_channels"]
 
     # suppress UserWarning
     import warnings
+
     warnings.filterwarnings("ignore", category=UserWarning)
     model = HiLO(cfg).to(device)
     loss_fn = torch.nn.MSELoss()
@@ -169,7 +180,10 @@ def test_hilo_learns_centers_cuda_or_cpu():
 
     final_loss = dataset_center_loss(model, data_batches)
 
-    assert final_loss < initial_loss, f"Model did not learn across batches: initial {initial_loss}, final {final_loss}"
+    assert (
+        final_loss < initial_loss
+    ), f"Model did not learn across batches: initial {initial_loss}, final {final_loss}"
+
 
 def test_hilo_loss_with_matching_overfits_single_sample():
     """Use the project's OptimalMatchLoss (with matching) and ensure the model can overfit one sample."""
@@ -211,7 +225,7 @@ def test_hilo_loss_with_matching_overfits_single_sample():
 
     # OptimalMatchLoss configuration (use center and classification costs)
     loss_cfg = {
-        "regression_loss": {"type": "l1", "kwargs": {} , "weight": 1.0},
+        "regression_loss": {"type": "l1", "kwargs": {}, "weight": 1.0},
         "classification_loss": {"type": "cross_entropy", "kwargs": {}, "weight": 1.0},
         "cost_matrix": {
             "center_distance_weight": 1.0,
@@ -249,28 +263,38 @@ def test_hilo_loss_with_matching_overfits_single_sample():
         n += 1
         if n > 1000:
             break
-    
+
     # final loss and sanity checks
     with torch.no_grad():
         pred = model(x.to(device), mask.to(device))
         losses, costs, asso = loss_module(pred, target, target_mask)
         final_total_train = losses["total_loss"].item()
         pred_centers = pred["centers"]
-        mae_train = torch.mean(torch.abs(pred_centers - target[:, : , :2].to(pred_centers.device))).item()
-    
+        mae_train = torch.mean(
+            torch.abs(pred_centers - target[:, :, :2].to(pred_centers.device))
+        ).item()
+
     model.eval()
     with torch.no_grad():
         pred = model(x.to(device), mask.to(device))
         losses, costs, asso = loss_module(pred, target, target_mask)
         final_total = losses["total_loss"].item()
         pred_centers = pred["centers"]
-        mae = torch.mean(torch.abs(pred_centers - target[:, : , :2].to(pred_centers.device))).item()
+        mae = torch.mean(
+            torch.abs(pred_centers - target[:, :, :2].to(pred_centers.device))
+        ).item()
 
-    assert final_total < initial_total, f"Matching loss did not decrease: init {initial_total}, final {final_total}"
-    assert mae < 1e-2, f"Predicted centers not close enough after overfitting (MAE={mae})"
+    assert (
+        final_total < initial_total
+    ), f"Matching loss did not decrease: init {initial_total}, final {final_total}"
+    assert (
+        mae < 1e-2
+    ), f"Predicted centers not close enough after overfitting (MAE={mae})"
 
 
-def _run_matching_overfit(cfg_model, x, mask, target, target_mask, loss_cfg, device, steps=200, lr=5e-2):
+def _run_matching_overfit(
+    cfg_model, x, mask, target, target_mask, loss_cfg, device, steps=200, lr=5e-2
+):
     """Helper: train model with given loss_cfg on repeated batch and return diagnostics."""
     model = HiLO(cfg_model).to(device)
     model.train()
@@ -321,7 +345,11 @@ def _run_matching_overfit(cfg_model, x, mask, target, target_mask, loss_cfg, dev
 
     # MAE of centers
     pred_centers = pred["centers"]
-    mae = float(torch.mean(torch.abs(pred_centers - target[:, :, :2].to(pred_centers.device))).cpu().numpy())
+    mae = float(
+        torch.mean(torch.abs(pred_centers - target[:, :, :2].to(pred_centers.device)))
+        .cpu()
+        .numpy()
+    )
     diagnostics["mae_centers"] = mae
 
     return diagnostics
@@ -375,12 +403,28 @@ def test_matching_components_and_costs_decrease():
         },
     }
 
-    diag_reg = _run_matching_overfit(cfg_model, x, mask, target, target_mask, loss_cfg_reg, device, steps=300, lr=1e-2)
+    diag_reg = _run_matching_overfit(
+        cfg_model,
+        x,
+        mask,
+        target,
+        target_mask,
+        loss_cfg_reg,
+        device,
+        steps=300,
+        lr=1e-2,
+    )
 
-    assert diag_reg["final_losses"]["regression_loss"] < diag_reg["init_losses"]["regression_loss"], "Regression loss did not decrease"
+    assert (
+        diag_reg["final_losses"]["regression_loss"]
+        < diag_reg["init_losses"]["regression_loss"]
+    ), "Regression loss did not decrease"
     # center weighted cost should decrease
     if "weighted_center_cost" in diag_reg["init_costs_mean"]:
-        assert diag_reg["final_costs_mean"]["weighted_center_cost"] <= diag_reg["init_costs_mean"]["weighted_center_cost"] + 1e-6
+        assert (
+            diag_reg["final_costs_mean"]["weighted_center_cost"]
+            <= diag_reg["init_costs_mean"]["weighted_center_cost"] + 1e-6
+        )
 
     # Scenario B: classification-only
     # Provide both configs; disable regression by setting weight=0.0
@@ -397,12 +441,31 @@ def test_matching_components_and_costs_decrease():
         },
     }
 
-    diag_cls = _run_matching_overfit(cfg_model, x, mask, target, target_mask, loss_cfg_cls, device, steps=300, lr=1e-2)
+    diag_cls = _run_matching_overfit(
+        cfg_model,
+        x,
+        mask,
+        target,
+        target_mask,
+        loss_cfg_cls,
+        device,
+        steps=300,
+        lr=1e-2,
+    )
 
-    assert "classification_loss" in diag_cls["init_losses"] and "classification_loss" in diag_cls["final_losses"], "Classification loss missing"
-    assert diag_cls["final_losses"]["classification_loss"] < diag_cls["init_losses"]["classification_loss"], "Classification loss did not decrease"
+    assert (
+        "classification_loss" in diag_cls["init_losses"]
+        and "classification_loss" in diag_cls["final_losses"]
+    ), "Classification loss missing"
+    assert (
+        diag_cls["final_losses"]["classification_loss"]
+        < diag_cls["init_losses"]["classification_loss"]
+    ), "Classification loss did not decrease"
     if "weighted_classification_cost" in diag_cls["init_costs_mean"]:
-        assert diag_cls["final_costs_mean"]["weighted_classification_cost"] <= diag_cls["init_costs_mean"]["weighted_classification_cost"] + 1e-6
+        assert (
+            diag_cls["final_costs_mean"]["weighted_classification_cost"]
+            <= diag_cls["init_costs_mean"]["weighted_classification_cost"] + 1e-6
+        )
 
     # Scenario C: combined
     loss_cfg_both = {
@@ -418,14 +481,37 @@ def test_matching_components_and_costs_decrease():
         },
     }
 
-    diag_both = _run_matching_overfit(cfg_model, x, mask, target, target_mask, loss_cfg_both, device, steps=300, lr=5e-3)
+    diag_both = _run_matching_overfit(
+        cfg_model,
+        x,
+        mask,
+        target,
+        target_mask,
+        loss_cfg_both,
+        device,
+        steps=300,
+        lr=5e-3,
+    )
 
-    assert diag_both["final_losses"]["regression_loss"] < diag_both["init_losses"]["regression_loss"], "Combined: regression loss did not decrease"
-    assert diag_both["final_losses"]["classification_loss"] < diag_both["init_losses"]["classification_loss"], "Combined: classification loss did not decrease"
+    assert (
+        diag_both["final_losses"]["regression_loss"]
+        < diag_both["init_losses"]["regression_loss"]
+    ), "Combined: regression loss did not decrease"
+    assert (
+        diag_both["final_losses"]["classification_loss"]
+        < diag_both["init_losses"]["classification_loss"]
+    ), "Combined: classification loss did not decrease"
     if "weighted_center_cost" in diag_both["init_costs_mean"]:
-        assert diag_both["final_costs_mean"]["weighted_center_cost"] <= diag_both["init_costs_mean"]["weighted_center_cost"] + 1e-6
+        assert (
+            diag_both["final_costs_mean"]["weighted_center_cost"]
+            <= diag_both["init_costs_mean"]["weighted_center_cost"] + 1e-6
+        )
     if "weighted_classification_cost" in diag_both["init_costs_mean"]:
-        assert diag_both["final_costs_mean"]["weighted_classification_cost"] <= diag_both["init_costs_mean"]["weighted_classification_cost"] + 1e-6
+        assert (
+            diag_both["final_costs_mean"]["weighted_classification_cost"]
+            <= diag_both["init_costs_mean"]["weighted_classification_cost"] + 1e-6
+        )
+
 
 def test_user_config_can_learn():
     """Load the user-provided HiLO config YAML, fill placeholders, and check it can learn on toy data."""
@@ -519,6 +605,6 @@ def test_user_config_can_learn():
         losses_final, costs_final, aso_final = loss_module(pred, target, target_mask)
         final_total = float(losses_final["total_loss"].cpu().numpy())
 
-    assert final_total < init_total, f"User config model did not learn: init {init_total}, final {final_total}"
-
-
+    assert (
+        final_total < init_total
+    ), f"User config model did not learn: init {init_total}, final {final_total}"

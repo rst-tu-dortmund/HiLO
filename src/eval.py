@@ -20,14 +20,26 @@ omegaconf_resolver.register()
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, (np.int_, np.intc, np.intp, np.int8,
-            np.int16, np.int32, np.int64, np.uint8,
-            np.uint16, np.uint32, np.uint64)):
+        if isinstance(
+            obj,
+            (
+                np.int_,
+                np.intc,
+                np.intp,
+                np.int8,
+                np.int16,
+                np.int32,
+                np.int64,
+                np.uint8,
+                np.uint16,
+                np.uint32,
+                np.uint64,
+            ),
+        ):
             return int(obj)
-        elif isinstance(obj, (np.float_, np.float16, np.float32, 
-            np.float64)):
+        elif isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
             return float(obj)
-        elif isinstance(obj, (np.ndarray,)): 
+        elif isinstance(obj, (np.ndarray,)):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
@@ -40,7 +52,7 @@ def evaluate(cfg):
         datefmt=cfg["logging"]["datefmt"],
     )
     logger = logging.getLogger("eval")
-    
+
     # Set seed
     set_fixed_seed(cfg.get("seed", 42), True)
 
@@ -50,7 +62,7 @@ def evaluate(cfg):
 
     val_data_cfg = copy.deepcopy(cfg["data"])
     val_data_cfg["shuffle"] = False
-    
+
     logger.info("Building dataloader...")
     val_loader = build_dataloader(val_data_cfg, split=cfg.get("split", "val"))
     logger.info(f"Dataloader built with {len(val_loader)} batches.")
@@ -63,8 +75,10 @@ def evaluate(cfg):
     # Load checkpoint
     checkpoint_path = cfg.get("checkpoint")
     if not checkpoint_path:
-        raise ValueError("Please specify a checkpoint path in the config via 'checkpoint=/path/to/ckpt.pth'")
-    
+        raise ValueError(
+            "Please specify a checkpoint path in the config via 'checkpoint=/path/to/ckpt.pth'"
+        )
+
     # resolve path (hydra might change cwd)
     if not os.path.isabs(checkpoint_path):
         checkpoint_path = hydra.utils.to_absolute_path(checkpoint_path)
@@ -74,12 +88,12 @@ def evaluate(cfg):
 
     logger.info(f"Loading checkpoint from {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location=cfg["device"])
-    
+
     if "model_state_dict" in checkpoint:
         state_dict = checkpoint["model_state_dict"]
     else:
         state_dict = checkpoint
-    
+
     msg = model.load_state_dict(state_dict, strict=True)
     logger.info(f"Loaded checkpoint with message: {msg}")
 
@@ -98,7 +112,7 @@ def evaluate(cfg):
         use_wandb=use_wandb,
         visualize_cfg=cfg["evaluation"].get("visualization", None),
     )
-    
+
     logger.info("Evaluation results:")
     print(json.dumps(metrics, indent=4, cls=NumpyEncoder))
 
