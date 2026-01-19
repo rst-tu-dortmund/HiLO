@@ -1,7 +1,6 @@
 from .hilo import HiLO
 import logging
 
-
 all_models = {
     "hilo": HiLO,
 }
