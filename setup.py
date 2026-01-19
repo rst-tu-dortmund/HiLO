@@ -20,7 +20,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
     setuptools.setup(
         name="hilo",
-        version="0.0.1",
+        version="1.0.0",
         author="Timo Osterburg",
         author_email="timo.osterburg@tu-dortmund.de",
         description="Implementation of HiLO: High-Level Object Fusion for Autonomous Driving using Transformers",
