@@ -93,20 +93,22 @@ class F1Score:
             },
             "mean_F1": np.mean(
                 [
-                    2
-                    * res[threshold]["true_positives"]
-                    / (
-                        2 * res[threshold]["true_positives"]
-                        + res[threshold]["false_positives"]
-                        + res[threshold]["false_negatives"]
+                    (
+                        2
+                        * res[threshold]["true_positives"]
+                        / (
+                            2 * res[threshold]["true_positives"]
+                            + res[threshold]["false_positives"]
+                            + res[threshold]["false_negatives"]
+                        )
+                        if (
+                            2 * res[threshold]["true_positives"]
+                            + res[threshold]["false_positives"]
+                            + res[threshold]["false_negatives"]
+                        )
+                        > 0
+                        else 0.0
                     )
-                    if (
-                        2 * res[threshold]["true_positives"]
-                        + res[threshold]["false_positives"]
-                        + res[threshold]["false_negatives"]
-                    )
-                    > 0
-                    else 0.0
                     for threshold in self.config["THRESHOLDS"]
                 ]
             ),
@@ -115,17 +117,19 @@ class F1Score:
             ),
             "mean_classification_accuracy": np.mean(
                 [
-                    res[threshold]["true_classified"]
-                    / (
+                    (
                         res[threshold]["true_classified"]
-                        + res[threshold]["false_classified"]
+                        / (
+                            res[threshold]["true_classified"]
+                            + res[threshold]["false_classified"]
+                        )
+                        if (
+                            res[threshold]["true_classified"]
+                            + res[threshold]["false_classified"]
+                        )
+                        > 0
+                        else 0.0
                     )
-                    if (
-                        res[threshold]["true_classified"]
-                        + res[threshold]["false_classified"]
-                    )
-                    > 0
-                    else 0.0
                     for threshold in self.config["THRESHOLDS"]
                 ]
             ),
@@ -199,9 +203,11 @@ class F1Score:
             "false_positives": sum_false_positives,
             "false_negatives": sum_false_negatives,
             "sum_assigned_ious": sum_assigned_ious,
-            "mIoU": sum_assigned_ious / sum_true_positives
-            if sum_true_positives > 0
-            else 0.0,
+            "mIoU": (
+                sum_assigned_ious / sum_true_positives
+                if sum_true_positives > 0
+                else 0.0
+            ),
             "true_classified": sum_true_classified,
             "false_classified": sum_false_classified,
         }

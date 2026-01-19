@@ -2,7 +2,6 @@ from .fusion import FusionFilteredDataset
 from torch.utils.data import DataLoader
 import logging
 
-
 all_datasets = {
     "fusion_filtered": FusionFilteredDataset,
 }
