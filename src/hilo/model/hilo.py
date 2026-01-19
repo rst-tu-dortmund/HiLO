@@ -21,11 +21,13 @@ class HiLO(BaseModel):
         # This is a placeholder implementation
         self.cfg = cfg
         self.logger = logging.getLogger(__name__)
-        
+
         self.no_mma_tf_masks = cfg.get("no_mma_tf_masks", False)
         if self.no_mma_tf_masks:
-            self.logger.warning("No multi-modal attention transformer masks will be used.")
-            
+            self.logger.warning(
+                "No multi-modal attention transformer masks will be used."
+            )
+
         self.no_fusion_tf_masks = cfg.get("no_fusion_tf_masks", False)
         if self.no_fusion_tf_masks:
             self.logger.warning("No fusion decoder transformer masks will be used.")
@@ -54,7 +56,9 @@ class HiLO(BaseModel):
 
         fusion_queries = fusion_queries / fusion_queries.abs().max()
         fusion_queries.requires_grad = True
-        self.register_parameter("fusion_queries", torch.nn.Parameter(fusion_queries, requires_grad=True))
+        self.register_parameter(
+            "fusion_queries", torch.nn.Parameter(fusion_queries, requires_grad=True)
+        )
 
         self.box_regression_head = MLP(cfg["box_regression_head"])
         denorm_reg_output_idcs = torch.tensor(
@@ -202,11 +206,14 @@ class HiLO(BaseModel):
         # predict boxes
         x_dec = einops.rearrange(x_dec, "b q c -> (b q) c")
         box_pred_norm = self.box_regression_head(x_dec)
-        box_pred_norm = torch.cat([
-            box_pred_norm[..., :2],
-            torch.exp(box_pred_norm[..., 2:4]),
-            box_pred_norm[..., 4:],
-        ], dim=-1)
+        box_pred_norm = torch.cat(
+            [
+                box_pred_norm[..., :2],
+                torch.exp(box_pred_norm[..., 2:4]),
+                box_pred_norm[..., 4:],
+            ],
+            dim=-1,
+        )
         box_pred = self.detection_normalization.denormalize(
             box_pred_norm,
             feature_idcs=self.denorm_reg_output_idcs,
@@ -229,7 +236,9 @@ class HiLO(BaseModel):
             tf_dims = einops.parse_shape(
                 x, tf_dim_pattern
             )  # yields b n c (either b n c or n b c), c is always last!
-            c_head = tf_dims["c"] // num_heads if num_heads is not None else tf_dims["c"]
+            c_head = (
+                tf_dims["c"] // num_heads if num_heads is not None else tf_dims["c"]
+            )
             pos_enc_in = pos_enc_feat.detach()  # b n c
             n_elem = pos_enc_in.shape[-1] * 2
             n_freq = math.ceil(c_head / n_elem)

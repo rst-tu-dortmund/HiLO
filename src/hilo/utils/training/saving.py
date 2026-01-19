@@ -73,15 +73,15 @@ def save_topk_checkpoints(
                     topk_checkpoints[metric]["epochs"][worst_idx] = epoch
                     topk_checkpoints[metric]["metrics"][worst_idx] = current_metric
                     path = f"{checkpoint_cfg['dir']}/{metric}_{epoch}.pth"
-                    
+
                     old_path = topk_checkpoints[metric]["paths"][worst_idx]
                     if os.path.exists(old_path):
                         os.remove(old_path)
-                        
+
                     logging.info(
                         f"Removed old checkpoint at {old_path} with {worst_metric:.4f} {metric}"
                     )
-                                        
+
                     topk_checkpoints[metric]["paths"][worst_idx] = path
                     torch.save(
                         {

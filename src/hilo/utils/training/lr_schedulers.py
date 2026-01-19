@@ -40,28 +40,27 @@ class LinearIncrease(nn.Module):
     def step(self):
         self.current_step += 1
         lr = self.start_lr + self.slope * self.current_step
-        
+
         for param_group in self.optimizer.param_groups:
             if isinstance(param_group["lr"], Tensor):
                 param_group["lr"].fill_(lr)
             else:
                 param_group["lr"] = lr
-    
+
     def epoch(self):
         pass  # No epoch-based logic needed
 
     def get_current_lr(self):
         return self.optimizer.param_groups[0]["lr"]
-    
+
     def state_dict(self):
         return {
             "current_step": self.current_step,
         }
-    
+
     def load_state_dict(self, state_dict):
-        self.current_step = state_dict[
-            "current_step"
-        ]
+        self.current_step = state_dict["current_step"]
+
 
 def initialize_lr_scheduler(lr_scheduler_cfg, optimizer, num_iterations_per_epoch):
     if (
@@ -78,7 +77,7 @@ def initialize_lr_scheduler(lr_scheduler_cfg, optimizer, num_iterations_per_epoc
         return OneCycle(
             optimizer, max_lr, warmup_epochs, max_epochs, num_iterations_per_epoch
         )
-        
+
     elif lr_scheduler_type in ["linearincrease", "linear_increase"]:
         start_lr = lr_scheduler_cfg["start_lr"]
         slope = lr_scheduler_cfg["slope"]

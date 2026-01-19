@@ -10,7 +10,7 @@ class BaseModel(Module):
         self.inference_filtering_method = cfg.get(
             "inference_filtering_method", "nms_free"
         ).lower()
-        
+
     def prepare_output(self, box_pred, class_pred):
         # compute yaw from sin and cos components
         yaw = torch.atan2(
@@ -47,20 +47,20 @@ class BaseModel(Module):
     def hard_filter(self, output):
         B, N, C = output["class_probs"].shape
         device = output["class_probs"].device
-        
+
         cls_ids = output["class_ids"]
         is_no_object = cls_ids >= output["class_probs"].shape[-1] - 1
-        
+
         scores = torch.gather(
             output["class_probs"], -1, cls_ids.to(torch.long).unsqueeze(-1)
         ).squeeze(-1)
-        
+
         score_mask = scores >= self.cfg.get("inference_score_threshold", 0.1)
         keep_mask = ~is_no_object & score_mask
         output["mask"] = keep_mask
-        
+
         return output
-    
+
     def nms_free_filter(self, output):
         B, N, C = output["class_probs"].shape
         device = output["class_probs"].device

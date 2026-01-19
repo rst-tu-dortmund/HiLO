@@ -41,7 +41,7 @@ def evaluate_model(
                     class_names=visualize_cfg.get("class_names", None),
                     filter_background=visualize_cfg.get("filter_background", True),
                 )
-            
+
             if use_wandb:
                 log_dict = {
                     f"eval/{k}": v
@@ -50,7 +50,7 @@ def evaluate_model(
                 }
                 log_dict["eval/global_step"] = global_eval_step
                 log_dict["eval/batch_idx"] = batch_idx
-                
+
                 if fig is not None:
                     log_dict["visualization/eval/sample"] = fig
 

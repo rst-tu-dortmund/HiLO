@@ -11,8 +11,8 @@ ext_modules = [
     CppExtension(
         name="hilo.evaluation.metrics.iou_bev_cpp",
         sources=["src/hilo/evaluation/metrics/cpp/iou_bev.cpp"],
-        extra_compile_args=['-O3', '-fopenmp'],
-        extra_link_args=['-lgomp'],
+        extra_compile_args=["-O3", "-fopenmp"],
+        extra_link_args=["-lgomp"],
     )
 ]
 

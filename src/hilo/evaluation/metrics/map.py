@@ -181,9 +181,9 @@ class NuscMAP:
 
                     # create threshold cost matrix
                     threshold_cost_matrix = np.ones((class_Ng, class_Ng)) * 1e6
-                    threshold_cost_matrix[np.arange(class_Ng), np.arange(class_Ng)] = (
-                        threshold
-                    )
+                    threshold_cost_matrix[
+                        np.arange(class_Ng), np.arange(class_Ng)
+                    ] = threshold
 
                     # create overall cost matrix
                     cost_matrix = np.concatenate(
@@ -396,7 +396,9 @@ class NuscMAP:
         ret_res = {
             "AP": {
                 threshold: {
-                    self.classes[cls_id] if self.classes is not None else cls_id: {
+                    self.classes[cls_id]
+                    if self.classes is not None
+                    else cls_id: {
                         "AP": (
                             comb_res[threshold][cls_id]["class_ap"].item()
                             if isinstance(
@@ -419,7 +421,9 @@ class NuscMAP:
                 for threshold in self.config["THRESHOLDS"]
             },
             "classwise_mAP": {
-                self.classes[cls_id] if self.classes is not None else cls_id: np.mean(
+                self.classes[cls_id]
+                if self.classes is not None
+                else cls_id: np.mean(
                     [
                         comb_res[threshold][cls_id]["class_ap"]
                         for threshold in self.config["THRESHOLDS"]
@@ -456,7 +460,6 @@ class NuscMAP:
         ret_res = self.flatten_dict(ret_res, sep="/")
 
         return ret_res
-
 
     def combine_classes_class_averaged(self, all_res, ignore_empty_classes=False):
         """Combines metrics across all classes by averaging over the class values.

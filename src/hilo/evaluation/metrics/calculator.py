@@ -10,7 +10,9 @@ import torch
 class MetricCalculator:
     def __init__(self, metrics_cfg):
         self.cfg = metrics_cfg
-        self.classes = metrics_cfg["classes"]   # TODO: why is "no object" included twice?!
+        self.classes = metrics_cfg[
+            "classes"
+        ]  # TODO: why is "no object" included twice?!
         self.num_classes = metrics_cfg["number_of_classes"]
 
         map_cfg = metrics_cfg.get("mAP", None)
@@ -19,7 +21,7 @@ class MetricCalculator:
             if map_cfg is not None and map_cfg.get("enabled", True)
             else None
         )
-        
+
         f1_cfg = metrics_cfg.get("F1", None)
         self.f1 = (
             F1Score(metrics_cfg["classes"], metrics_cfg["used_classes"], config=f1_cfg)
@@ -52,23 +54,28 @@ class MetricCalculator:
             .numpy()
         )  # B x N
 
-        det_mask = prediction['mask'].detach().cpu().numpy().astype(bool)
-        
+        det_mask = prediction["mask"].detach().cpu().numpy().astype(bool)
+
         center_distances = (
             torch.cdist(batch["gt_data"][..., :2], prediction["centers"])
             .detach()
             .cpu()
             .numpy()
         )  # B x M x N
-        
+
         if self.f1 is not None:
-            iou = rotated_iou_bev(
-                batch["gt_data"][..., :7], # x y length width v_x v_y yaw
-                prediction["bboxes"] # x y length width v_x v_y yaw
-            ).detach().cpu().numpy()  # B x M x N
+            iou = (
+                rotated_iou_bev(
+                    batch["gt_data"][..., :7],  # x y length width v_x v_y yaw
+                    prediction["bboxes"],  # x y length width v_x v_y yaw
+                )
+                .detach()
+                .cpu()
+                .numpy()
+            )  # B x M x N
         else:
             iou = np.zeros_like(center_distances)
-        
+
         prep_batch = {
             "num_classes": self.num_classes,
             "gt_classes": [
@@ -103,9 +110,7 @@ class MetricCalculator:
             ],
             "iou": [
                 b_iou[b_gt_mask, :][:, b_det_mask]
-                for b_iou, b_gt_mask, b_det_mask in zip(
-                    iou, gt_mask, det_mask
-                )
+                for b_iou, b_gt_mask, b_det_mask in zip(iou, gt_mask, det_mask)
             ],
         }
 
@@ -114,11 +119,11 @@ class MetricCalculator:
     def batch(self, prediction, batch):
         data = self._pack_data(prediction, batch)
         batch_metrics = {}
-        
+
         if self.map is not None:
             map_batch_metrics = self.map.eval_batch(data)
             batch_metrics.update(map_batch_metrics)
-            
+
         if self.f1 is not None:
             f1_batch_metrics = self.f1.eval_batch(data)
             batch_metrics.update(f1_batch_metrics)
@@ -132,13 +137,13 @@ class MetricCalculator:
         # end of epoch, combine results
         self.logger.info(f"Combining metrics from {self.batch_idx} batches.")
         epoch_metrics = {}
-        
+
         if self.map is not None:
             epoch_metrics.update(self.map.combine_batches(self.batch_metrics))
-            
+
         if self.f1 is not None:
             epoch_metrics.update(self.f1.combine_batches(self.batch_metrics))
-        
+
         self.reset()
 
         return epoch_metrics

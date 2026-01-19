@@ -239,11 +239,11 @@ class Embedding(Module):
         super(Embedding, self).__init__()
         self.cfg = cfg
         self.enabled = cfg.get("enabled", True)
-        
+
         if not self.enabled:
             self.additional_channels = 0
             return
-        
+
         embeddings = cfg.get("embeddings", [])
 
         self.emb_steps = nn.ModuleList()
@@ -280,7 +280,7 @@ class Embedding(Module):
     def forward(self, x):
         if not self.enabled:
             return x
-        
+
         for emb_step in self.emb_steps:
             if emb_step.enabled:
                 x = emb_step(x)

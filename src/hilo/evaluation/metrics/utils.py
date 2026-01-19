@@ -5,6 +5,7 @@ from shapely.geometry import Polygon
 
 try:
     import hilo.evaluation.metrics.iou_bev_cpp as iou_bev_cpp
+
     CPP_AVAILABLE = True
 except ImportError:
     CPP_AVAILABLE = False
@@ -30,15 +31,16 @@ def create_polygon(bb):
 
     return Polygon([(x1, y1), (x2, y2), (x3, y3), (x4, y4)])
 
+
 def rotated_iou_bev(boxes1, boxes2, boxes1_mask=None, boxes2_mask=None):
     if CPP_AVAILABLE:
         B, M, _ = boxes1.shape
         _, N, _ = boxes2.shape
-        
+
         # Prepare inputs
         b1_c = boxes1.contiguous()
         b2_c = boxes2.contiguous()
-        
+
         if boxes1_mask is None:
             m1 = torch.ones((B, M), dtype=torch.bool, device=boxes1.device)
         else:
@@ -48,36 +50,39 @@ def rotated_iou_bev(boxes1, boxes2, boxes1_mask=None, boxes2_mask=None):
             m2 = torch.ones((B, N), dtype=torch.bool, device=boxes2.device)
         else:
             m2 = boxes2_mask.contiguous()
-            
+
         iou_matrix_cpp = iou_bev_cpp.rotated_iou_bev_cpp(b1_c, b2_c, m1, m2)
-        
+
         # Consistency check (enabled for verification)
-        if False: # Set to True to verify
-             iou_matrix_py = _rotated_iou_bev_python(boxes1, boxes2, boxes1_mask, boxes2_mask)
-             diff = (iou_matrix_cpp - iou_matrix_py).abs().max()
-             logging.info(f"Max IoU difference (CPP vs Python): {diff}")
-             if diff > 1e-4:
-                 logging.warning("WARNING: large difference detected!")
-        
+        if False:  # Set to True to verify
+            iou_matrix_py = _rotated_iou_bev_python(
+                boxes1, boxes2, boxes1_mask, boxes2_mask
+            )
+            diff = (iou_matrix_cpp - iou_matrix_py).abs().max()
+            logging.info(f"Max IoU difference (CPP vs Python): {diff}")
+            if diff > 1e-4:
+                logging.warning("WARNING: large difference detected!")
+
         return iou_matrix_cpp
 
     return _rotated_iou_bev_python(boxes1, boxes2, boxes1_mask, boxes2_mask)
 
+
 def _rotated_iou_bev_python(boxes1, boxes2, boxes1_mask=None, boxes2_mask=None):
     if len(boxes1.shape) != 3 or boxes1.shape[-1] != 7:
         raise ValueError("boxes1 must have shape (B, M, 7)")
-    
+
     if len(boxes2.shape) != 3 or boxes2.shape[-1] != 7:
         raise ValueError("boxes2 must have shape (B, N, 7)")
-    
+
     if not boxes1.shape[0] == boxes2.shape[0]:
         raise ValueError("boxes1 and boxes2 must have the same batch size B")
-    
+
     B, M, _ = boxes1.shape
     _, N, _ = boxes2.shape
-    
+
     iou_matrix = torch.zeros((B, M, N), device=boxes1.device, requires_grad=False)
-    
+
     for b in range(boxes1.shape[0]):
         boxes1_count = boxes1[b].shape[0]
         boxes2_count = boxes2[b].shape[0]
@@ -104,8 +109,7 @@ def _rotated_iou_bev_python(boxes1, boxes2, boxes1_mask=None, boxes2_mask=None):
                                 lambda b1, b2: (
                                     0.0
                                     if b1.union(b2).area < 1e-2
-                                    else b1.intersection(b2).area
-                                    / b1.union(b2).area
+                                    else b1.intersection(b2).area / b1.union(b2).area
                                 )
                             )(
                                 create_polygon(box1),
@@ -119,5 +123,5 @@ def _rotated_iou_bev_python(boxes1, boxes2, boxes1_mask=None, boxes2_mask=None):
             ],
             device=boxes1.device,
         )
-    
+
     return iou_matrix

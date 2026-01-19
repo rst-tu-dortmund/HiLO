@@ -34,7 +34,7 @@ def train(cfg):
     val_data_cfg = copy.deepcopy(cfg["data"])
     val_data_cfg["shuffle"] = False
     val_loader = build_dataloader(val_data_cfg, split="val")
-    
+
     # Keep the sizes as is, as the CE-Loss weight computation depends on it
     # It uses the class counts and number of samples, class counts are for the whole dataset
     # Reducing the number of samples here would lead to wrong weights for the no object class!
